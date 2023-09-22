@@ -1,8 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Options;
-using Microsoft.JSInterop;
-using System;
+﻿using System;
 using System.IO;
 using System.Runtime.InteropServices.JavaScript;
 using System.Threading;
