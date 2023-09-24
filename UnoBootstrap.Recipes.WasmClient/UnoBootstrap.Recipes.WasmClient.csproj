@@ -30,10 +30,5 @@
 		<DebugSymbols>true</DebugSymbols>
 		<DefineConstants>$(DefineConstants);TRACE;DEBUG</DefineConstants>
 	</PropertyGroup>
-
-
-	<ItemGroup>
-	  <Folder Include="Advanced\" />
-	</ItemGroup>
 	
 </Project>

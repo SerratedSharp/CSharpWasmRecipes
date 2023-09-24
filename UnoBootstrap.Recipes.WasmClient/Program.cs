@@ -4,7 +4,7 @@ using System.Runtime.InteropServices.JavaScript;
 using System.Threading;
 using System.Threading.Tasks;
 using Uno.Foundation;
-
+using UnoBootstrap.Recipes.WasmClient.Advanced;
 using JSConsole = UnoBootstrap.Recipes.WasmClient.JSWrappers.Console;
 
 
@@ -49,6 +49,10 @@ namespace UnoBootstrap.Recipes.WasmClient
             var elementClasses = Basic.JSObjectExample.GetClass(element);
             Console.WriteLine("Class string: " + elementClasses);
 
+            // Using WebAssemblyRuntime based instance wrapper 
+            ElementWrapper elementWrapper = ElementWrapper.GetElementById("uno-body");
+            var elementClasses2 = elementWrapper.GetClass();
+            Console.WriteLine("Class string2: " + elementClasses2);
 
 
         }
