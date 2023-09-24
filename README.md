@@ -127,7 +127,7 @@ Now any static method can implement instance semantics by taking a JSObject as i
 
 #### Using WebAssemblyRuntime IJSObject and InvokeJSWithInterop
 
-Whenever an instance implementing IJSObject is created and we call JSOjbectHandle.Create(), a javascript object is created and tracked.  If an instance of IJSObject is passed directly into InvokeJSWithInterop via string interpolation, the corresponding javascript object is used in its place.  We choose an arbitrarily named property to hold and access the javascript object we are wrapping.
+Whenever an instance implementing IJSObject is created and we call JSOjbectHandle.Create(), a javascript object is created and tracked.  If an instance of IJSObject is passed directly into InvokeJSWithInterop via string interpolation, the corresponding javascript object is used in its place.  We choose an arbitrarily named `.obj` property to hold and access the javascript object we are wrapping.
 
 ```C#
 using Uno.Foundation.Interop;
