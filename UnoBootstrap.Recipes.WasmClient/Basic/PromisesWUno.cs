@@ -9,13 +9,14 @@ namespace UnoBootstrap.Recipes.WasmClient.Basic
 {
 
     // IMPORTANT: Invoke Async requires the package Uno.UI.WebAssembly due to dependency on JS declaration of Uno.UI.Interop
-    internal class Promises
+    // Promises implemented with Uno.Foundation.WebAssemblyRuntime
+    internal class PromisesWUno
     {
         // For functions which already return a promise, this allows C# to await the promise.  From: https://platform.uno/docs/articles/interop/wasm-javascript-1.html#invoke-javascript-code-from-c
         public static async Task AwaitFunctionReturningPromise()
         {
             await WebAssemblyRuntime.InvokeAsync("""
-                fetch('https://api.example.com/documents/1301', {method: 'DELETE'});
+                return fetch('https://api.example.com/documents/1301', {method: 'DELETE'});
             """);
         }
 

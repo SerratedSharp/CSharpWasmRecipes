@@ -4,7 +4,7 @@ using System.Runtime.InteropServices.JavaScript;
 using System.Threading;
 using System.Threading.Tasks;
 using Uno.Foundation;
-using UnoBootstrap.Recipes.WasmClient.Advanced;
+// Alias our JS console wrapper to avoid conflicts with System.Console
 using JSConsole = UnoBootstrap.Recipes.WasmClient.JSWrappers.Console;
 
 
@@ -18,14 +18,18 @@ namespace UnoBootstrap.Recipes.WasmClient
             Console.WriteLine("Hello, World!");
 
             // We can await values returned from JS promises:
-            string resolvedValue = await Basic.Promises.AwaitFunctionReturningPromisedString();
+            string resolvedValue = await Basic.PromisesWUno.AwaitFunctionReturningPromisedString();
             Console.WriteLine(resolvedValue);
 
             // We can also convert JS callbacks to awaitable promises
-            await Basic.Promises.ConvertCallbackToPromise();
+            await Basic.PromisesWUno.ConvertCallbackToPromise();
+
+            Basic.PromisesWNet7.DeclareJSFunctionReturningPromisedString();
+            var fetchBody = await Basic.PromisesWNet7.FunctionReturningPromisedString("https://cat-fact.herokuapp.com/facts/");
+            Console.WriteLine("fetchBody: " + fetchBody.Substring(0,100) + "...");
 
             // Note: Our javascript Console wrapper is aliased at the top using as JSConsole to avoid conflict with System.Console.
-            JSConsole.Log("LoggedViaWrapper", DateTime.Now);
+            JSConsole.Log("LoggedViaWrapper", DateTime.Now);    
 
             // Call console.log a different way using JSImport
             Basic.JSImportExample.GlobalThisConsoleLog("Hello from JSImported console.log!");
@@ -50,9 +54,13 @@ namespace UnoBootstrap.Recipes.WasmClient
             Console.WriteLine("Class string: " + elementClasses);
 
             // Using WebAssemblyRuntime based instance wrapper 
-            ElementWrapper elementWrapper = ElementWrapper.GetElementById("uno-body");
+            Advanced.ElementWrapper elementWrapper = Advanced.ElementWrapper.GetElementById("uno-body");
             var elementClasses2 = elementWrapper.GetClass();
             Console.WriteLine("Class string2: " + elementClasses2);
+
+
+
+
 
 
         }

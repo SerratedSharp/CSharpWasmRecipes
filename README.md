@@ -127,7 +127,7 @@ Now any static method can implement instance semantics by taking a JSObject as i
 
 #### Using WebAssemblyRuntime IJSObject and InvokeJSWithInterop
 
-Whenever an instance implementing IJSObject is created and we call JSOjbectHandle.Create(), a javascript object is created and tracked.  If an instance of IJSObject is passed directly into InvokeJSWithInterop via string interpolation, the corresponding javascript object is used in its place.  We choose an arbitrarily named `.obj` property to hold and access the javascript object we are wrapping.
+Whenever an instance implementing IJSObject is created and we call JSOjbectHandle.Create(), a javascript object is created and tracked.  If an instance of IJSObject is passed directly into InvokeJSWithInterop via string interpolation, the corresponding javascript object is used in its place.  We choose an arbitrarily named `.obj` property to hold and access the javascript object we are wrapping.  The major benefit of this approach is we don't need to scaffold both javascript and C# static methods to act as proxies for instance semantics.
 
 ```C#
 using Uno.Foundation.Interop;
@@ -166,8 +166,9 @@ ElementWrapper elementWrapper = ElementWrapper.GetElementById("uno-body");
 string elementClasses2 = elementWrapper.GetClass();
 ```
 
-## Promises.cs
-Demonstrates approaches to exposing a JS promise, async method, or old style callback as an async method in C# that can be awaited.  Includes returning a string from JS to C#.  Demonstrates awaiting RequireJS dependency resolution where C# code needs to wait for a JS dependency to load.
+## Promises
+PromisesWNet7 and PromisesWUno demonstrate exposing methods that return promises with .NET 7 or Uno Foundation WebASsembly runtime respectively.  
+Demonstrations include approaches to exposing a JS promise, async method, or old style callback as an async method in C# that can be awaited.  Includes returning a string from JS to C#.  Demonstrates awaiting RequireJS dependency resolution where C# code needs to wait for a JS dependency to load.
 
 ## Security.cs
 Demonstrates the risks of unencoded strings, and how to properly encode and fence string parameters passed from C# to JS to avoid XSS attacks that would attempt to abuse `InvokeJS`.
