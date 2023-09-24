@@ -160,6 +160,11 @@ public class ElementWrapper : IJSObject
     }
 ```
 
+Using the wrapper, we can retrieve an instance and call instane methods directly on it:
+```C#
+ElementWrapper elementWrapper = ElementWrapper.GetElementById("uno-body");
+string elementClasses2 = elementWrapper.GetClass();
+```
 
 ## Promises.cs
 Demonstrates approaches to exposing a JS promise, async method, or old style callback as an async method in C# that can be awaited.  Includes returning a string from JS to C#.  Demonstrates awaiting RequireJS dependency resolution where C# code needs to wait for a JS dependency to load.
