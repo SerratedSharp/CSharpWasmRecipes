@@ -160,7 +160,7 @@ public class ElementWrapper : IJSObject
     }
 ```
 
-Using the wrapper, we can retrieve an instance and call instane methods directly on it:
+Using the wrapper, we can retrieve an instance and call instance methods directly:
 ```C#
 ElementWrapper elementWrapper = ElementWrapper.GetElementById("uno-body");
 string elementClasses2 = elementWrapper.GetClass();
