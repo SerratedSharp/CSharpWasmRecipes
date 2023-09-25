@@ -136,7 +136,7 @@ public class ElementWrapper : IJSObject
 {
     internal JSObjectHandle handle;    
     JSObjectHandle IJSObject.Handle { get => handle; }
-    // internal constructor, objects are created/returned from static methods
+    // internal constructor, objects are created/returned only from static methods
     internal ElementWrapper() {
         handle = JSObjectHandle.Create(this);
     }
@@ -167,7 +167,7 @@ string elementClasses2 = elementWrapper.GetClass();
 ```
 
 ## Promises
-PromisesWNet7 and PromisesWUno demonstrate exposing methods that return promises with .NET 7 or Uno Foundation WebASsembly runtime respectively.  
+PromisesWNet7 and PromisesWUno demonstrate exposing methods that return promises with .NET 7 or Uno Foundation WebAssembly runtime respectively.  
 Demonstrations include approaches to exposing a JS promise, async method, or old style callback as an async method in C# that can be awaited.  Includes returning a string from JS to C#.  Demonstrates awaiting RequireJS dependency resolution where C# code needs to wait for a JS dependency to load.
 
 ## Security.cs
