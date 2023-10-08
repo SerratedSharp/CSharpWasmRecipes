@@ -5,16 +5,16 @@ There are a multitude of options for interop between C# and JS types.  The histo
 
 ## Interop Supporting Runtimes
 
-It is helpful to be familiar with the ecosystem of different libraries and frameworks that provide JS interop capability within .NET, so devs can recognize what doucmentation or tools are applicable to their environment.
+It is helpful to be familiar with the ecosystem of different libraries and frameworks that provide JS interop capability within .NET, so devs can recognize what documentation or tools are applicable to their environment.
 
-- .NET 7, System.Runtime.InteropServices.JavaScript: Many JS interopt capabilities were implemented in .NET 6 and signifcantly expanded in .NET 7.  We'll refer to examples leveraging this capability as simply ".NET 7".  These are compatible with Uno.Bootstrap.Wasm, and are typically more performant.  In some ways it is more restrictive(lacks an equivilant to InvokeJSWithInterop), and requires more boiler plate code to accomplish similar tasks such as requiring two extra layers of instance method proxies for both the C# and JS layer (however specific approaches can be used to mitigate the proliferation of these proxy methods).  The support for parameter/return/type marshalling in .NET 7 is a significant improvement over Uno.Bootstrap.Wasm approaches where types needed to be explicitely marshalled and parameter fencing had to be carefully guarded.  Overall using .NET 7's *.InteropServices.JavaScript is the preferred approach.
+- .NET 7, System.Runtime.InteropServices.JavaScript: Many JS interop capabilities were implemented in .NET 6 and significantly expanded in .NET 7.  We'll refer to examples leveraging this capability as simply ".NET 7".  These are compatible with Uno.Bootstrap.Wasm, and are typically more performant.  In some ways it is more restrictive(lacks an equivalent to InvokeJSWithInterop), and requires more boilerplate code to accomplish similar tasks such as requiring two extra layers of instance method proxies for both the C# and JS layer (however specific approaches can be used to mitigate the proliferation of these proxy methods).  The support for parameter/return/type marshaling in .NET 7 is a significant improvement over Uno.Bootstrap.Wasm approaches where types needed to be explicitly marshaled and parameter fencing had to be carefully guarded.  Overall using .NET 7's *.InteropServices.JavaScript is the preferred approach.
 - Uno.Foundation.WebAssemblyRuntime/Uno.Foundation.Interop: This provides the majority of legacy interop capabilities for Uno.Bootstrap.Wasm prior to first class support for interop in .NET. The nuget package Uno.Foundation.Runtime.WebAssembly provides these capabilities, with the namespace Uno.Foundation.Interop containing most of the relevant types.  It is recommended to use .NET 7 capabilities instead where possible.  Some capabilities such as InvokeJSWithInterop were only intended for internal Uno use, and will likely be deprecated in favor of .NET 7 approaches.
-- Microsoft.JSInterop.IJSRuntime/JSRuntime: Typically used by code specific to the Blazor framework.  *To my knowledge* this cannot be used in non-Blazor contexts such as Uno.Bootstrap.Wasm without hooks into the Host initilization that would typically instantiate and register the JSRuntime into the DI ServiceCollection.
+- Microsoft.JSInterop.IJSRuntime/JSRuntime: Typically used by code specific to the Blazor framework.  *To my knowledge* this cannot be used in non-Blazor contexts such as Uno.Bootstrap.Wasm without hooks into the Host initialization that would typically instantiate and register the JSRuntime into the DI ServiceCollection.
  
 
 Additional Packages:
 - Uno.Bootstrap.Wasm: Rather than facilitating interop, this handles compiling and packaging our .NET assembly as a WebAssembly/WASM, along with all the javascript necessary for loading(i.e. **bootstrap**ping) the WASM into the browser.  This is only intended for use in the root project which will be the entry point for the WebAssembly.  Other class libraries/projects referenced do not need to reference this package.   Note, no relation to the Bootstrap CSS/JS frontend framework.
-- Uno.UI.WebAssembly: This package contains some javascript declarations what WebAssemblyRuntime is dependent on. For example, `WebAssemblyRuntime.InvokeAsync()` will fail at runtime if this package has not been included.
+- Uno.UI.WebAssembly: This package contains some javascript declarations that WebAssemblyRuntime is dependent on. For example, `WebAssemblyRuntime.InvokeAsync()` will fail at runtime if this package has not been included.
 
 > [!IMPORTANT] 
 > There are some type names that exist in both WebAssemblyRuntime and System.Runtime.InteropService.Javascript, such as JSObject.  Be mindful of what namespaces you have declared in `using`, or fully qualify, to avoid confusing compilation errors.  A project can leverage both capabilities in different places, but would not mix them for a given C#/JS function/type mapping.
@@ -126,7 +126,7 @@ var elementClasses = JSObjectExample.GetClass(element);
 Console.WriteLine("Class string: " + elementClasses);
 ```
 
-Now any static method can implement instance semantics by taking a JSObject as its first parameter, and in turn calling the instance method on the JSObject.  This could be evolved into a wrapper class that holds the JSObject as an internal field and exposes instance methods to present a more netural interface.
+Now any static method can implement instance semantics by taking a JSObject as its first parameter, and in turn calling the instance method on the JSObject.  This could be evolved into a wrapper class that holds the JSObject as an internal field and exposes instance methods to present a more natural interface.
 
 #### Using WebAssemblyRuntime IJSObject and InvokeJSWithInterop
 
@@ -174,7 +174,7 @@ PromisesWNet7 and PromisesWUno demonstrate exposing methods that return promises
 Demonstrations include approaches to exposing a JS promise, async method, or old style callback as an async method in C# that can be awaited.  Includes returning a string from JS to C#.  Demonstrates awaiting RequireJS dependency resolution where C# code needs to wait for a JS dependency to load.
 
 ## Security.cs
-Demonstrates the risks of unencoded strings, and how to properly encode and fence string parameters passed from C# to JS to avoid XSS attacks that would attempt to abuse `InvokeJS`.
+Demonstrates the risks of unencoded strings when building and executing javascript dynamically, and how to properly encode and fence string parameters passed from C# to JS to avoid XSS attacks that would attempt to abuse `InvokeJS`.  Note: This specific risk is not present when using .NET 7's JSImport/JSExport since javascript is not composed dynamically.
 
 In general, the following guidelines should be followed:
  - User generated strings should only be embedded as parameters.
@@ -184,7 +184,7 @@ In general, the following guidelines should be followed:
         
 Note: As with any consideration for XSS, the phrase "user generated strings" covers a wide variety of scenarios where a string potentially originated from a user or other untrusted source.  For example, in a given context, you may have queried a string from a trusted API or trusted database, but the string may be untrusted because it was at some point submitted and saved from user input.  Consider where user's provide a description of themselves, and that description is stored in the DB, and can be viewed by other users.  A variety of attacks could be embedded in this string, such as HTML injection or JS injection, but could also contain legitimately benign characters that aren't malicious in nature, yet could interfere in a context, and yet should also be rendered correctly.  No sanitization is universal in protecting from all of these attacks without potentially mangling the string.  You must apply the appropriate encoding based on the context where the content is being embedded to ensure it is both secure and rendered correctly.  You may need to apply multiple encodings in a specific order based on nested contexts.  See `Security.SafeInvokeJSWithHtml()`
 
- Note: Use of JSImport rather than InvokeJS can eliminate the need for JS encoding parameters.  It does not obsolve you of addressing other encoding contexts.
+ Note: Use of JSImport rather than InvokeJS can eliminate the need for JS encoding parameters.  It does not absolve you of addressing other encoding contexts.
 
 
 ## Upcoming
