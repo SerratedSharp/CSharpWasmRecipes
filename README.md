@@ -203,17 +203,10 @@ JSObject implements IDisposable which serves to release memory in the JS layer. 
 To reduce the amount of boilerplate JS code needed to map instance methods, we can use .apply to call JS methods of an arbitrary name and number of parameters [Mozilla Function.prototype.apply\(\)](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function/apply): 
 
 ```js
-var Serrated = globalThis.Serrated || {};
-(function (Serrated) {    
-    var InstanceProxy = Serrated.InstanceProxy || {};// create child namespace
-
-    InstanceProxy.FuncByNameToObject = function (jsObject, funcName, params) {
-        const rtn = jsObject[funcName].apply(jsObject, params);    
-        return rtn;
-    };
-
-    Serrated.InstanceProxy = InstanceProxy; // add to parent namespace
-})(Serrated = globalThis.Serrated || (globalThis.Serrated = {}));s
+InstanceProxy.FuncByNameToObject = function (jsObject, funcName, params) {
+    const rtn = jsObject[funcName].apply(jsObject, params);    
+    return rtn;
+};
 ```
 
 ```C#
@@ -231,25 +224,31 @@ public static partial class JSInstanceProxy
 FuncByNameAsObject(elementJSObject, "getAttribute", new object[] { "class" });
 ```
 
-#### Generic Instance Proxy
+#### Proxyless Instance Wrapper
 
-A generic approach to replace the JS and proxy layers is implemented in SerratedSharp.JSInteropHelpers, which allows instance methods to be mapped from the wrapper layer without explicit declarations of the lower layers.  This appropach is demonstrated in [JQueryPlainObject.cs](https://github.com/SerratedSharp/SerratedJQ/blob/main/SerratedJQLibrary/SerratedJQ/Plain/JQueryPlainObject.cs):
+A generic approach to replace the JS and proxy layers is implemented in SerratedSharp.JSInteropHelpers, which leverages the `jsObject[funcName].apply()` technique in combination with mechanisms such as `[CallerMemberName]` to automatically call a JS function of the same name and parameters as the calling method's name.  For example, `Last() => this.CallJSOfSameNameAsWrapped();` will call a JS method named `last()` on the instance of JSObject this type wraps.  The IJSObjectWrapper interface is leveraged to access the JSObject handle that these instance methods operate on.
+This approach is demonstrated in [JQueryPlainObject.cs](https://github.com/SerratedSharp/SerratedJQ/blob/main/SerratedJQLibrary/SerratedJQ/Plain/JQueryPlainObject.cs) which wraps a javascript jQuery object with a strongly typed C# wrapper.  Each of the below instance methods calls a JS method of the same name and parameters without the need to declare proxy JS or C# method/classes.  Various overloads support variations of returning a JSObject wrapper or primitive value.
 
 ```C#
 using SerratedSharp.JSInteropHelpers;
 public class JQueryPlainObject : IJSObjectWrapper<JQueryPlainObject>, IJQueryContentParameter
 {
-    internal JSObject jsObject;
+    internal JSObject jsObject;//  Handle to JS object, marked internal so other compliementary static factory classes can wrap instances
     public JSObject JSObject { get { return jsObject; } }
 
+    // Most constructers aren't called directly by consumers, but thru static methods such as .Select
     internal JQueryPlainObject() { }
+
+    // Construct wrapper from JS object reference, not typically used and requires caller ensure the referenced instance is of the appropriate type
     public JQueryPlainObject(JSObject jsObject) { this.jsObject = jsObject; }
+
+    // Factory constructor for interface used by JSInteropHelpers when methods return a new wrapped instance
     static JQueryPlainObject IJSObjectWrapper<JQueryPlainObject>.WrapInstance(JSObject jsObject)
     {
         return new JQueryPlainObject(jsObject);
     }
 
-    // Map instance methods to JS methods of the same name and parameters:
+    // Map instance methods to JS methods of the same name and parameters using JSInteropHelpers:
     public JQueryPlainObject Last() => this.CallJSOfSameNameAsWrapped();
     public JQueryPlainObject Eq(int index) => this.CallJSOfSameNameAsWrapped(index);
     public JQueryPlainObject Slice(int start, int end) => this.CallJSOfSameNameAsWrapped(start, end);
@@ -258,25 +257,153 @@ public class JQueryPlainObject : IJSObjectWrapper<JQueryPlainObject>, IJQueryCon
     public void Attr(string attributeName, string value) => this.CallJSOfSameName<object>(attributeName, value);
     public string Val() => this.CallJSOfSameName<string>();
     public T Val<T>() => this.CallJSOfSameName<T>();
-    
+    //...
+}
+
+public static class JQueryPlain
+{
+    // Example of a static method returning newly constructed/wrapped JS references
+    public static JQueryPlainObject Select(string selector)
+    {
+        var managedObj = new JQueryPlainObject();// Leverages internal constructor
+        // Then explicitely sets the JSObject reference retrieved through JS proxy
+        // Note, using this approach static methods still have explicit proxies
+        managedObj.jsObject = JQueryProxy.Select(selector);
+        return managedObj;
+    }
+}
 ```
 
-Each of these instance methods calls a JS method of the same name and parameters without the need to declare proxy JS or C# method/classes.  Various overloads support variations of returning a JSObject wrapper or primitive value.
-
-Internally SerratedSharp.JSInteropHelpers leverages the [Universal JS Instance Method](#Universal-JS-Instance-Method) in combination with mechanisms such as `[CallerMemberName]` to automatically call a JS function of the same name and parameters as the calling method's name.  For example, `Last() => this.CallJSOfSameNameAsWrapped();` will call a method named "Last" on the instance of JSObject this type wraps.  This implementation leverages the IJSObjectWrapper interfaces to access the JSObject handle that these instance methods operate on.
-
 ## Promises
-PromisesWNet7 and PromisesWUno demonstrate exposing methods that return promises with .NET 7 or Uno Foundation WebAssembly runtime respectively.  
-Demonstrations include approaches to exposing a JS promise, async method, or old style callback as an async method in C# that can be awaited.  Includes returning a string from JS to C#.  Demonstrates awaiting RequireJS dependency resolution where C# code needs to wait for a JS dependency to load.
+
+Demonstrations include approaches to exposing a JS promise, async method, or old style callback as an async method in C# that can be awaited.  Demonstrates awaiting RequireJS dependency resolution where C# code needs to wait for a JS dependency to load.
+
+### C# Awaiting a JS Promise
+
+```JS
+globalThis.functionReturningPromisedString = function (url) {   
+    return fetch(url, {method: 'GET'})  // request URL
+        .then(response => response.text()); 
+    // Note that .text() returns a promise.
+}   
+```
+
+```C#
+internal static partial class RequestsProxy
+{
+    // Match the above javascript function signature.
+    [JSImport("globalThis.functionReturningPromisedString")]
+    [return: JSMarshalAs<JSType.Promise<JSType.String>>()] // JS function returns a promise that resolves to a string
+    public static partial Task<string> // the return type Task<string> corresponds to the marshalled Promise<string>
+        FunctionReturningPromisedString(string url);
+}
+
+// Usage:
+string response = await RequestsProxy.FunctionReturningPromisedString("https://www.example.com");
+```
+
+### C# Awaiting an Event Exposed as a JS Promise
+
+Sometimes it is necessary to guarantee that an operation has completed before continuing execution, but some older JS APIs only signal completion using JS events rather than returning promises.  We can wrap the event in a new JS promise, and then C# code can await the promise.  Note this is not appropriate for all events, and it is possible for JS events to raise C# events. (TODO: Document event subscription) 
+
+This JS creates a `<script>` element to load a javascript file, and exposes the `onload` event as a promise that resolves when the script is loaded.  This is useful for awaiting the loading of a JS library.
+
+The key points of this approach:
+- Create a new Promise
+- Assign the resolve parameter as the handler for the event we wish to await
+- Return the new promise
+
+Callers can await the promise and it will await until the event is raised.
+
+```JS
+globalThis.LoadScript = function (relativeUrl) {
+    return new Promise(function (resolve, reject) {
+        var script = document.createElement("script");
+        script.onload = resolve;
+        script.onerror = reject;
+        script.src = relativeUrl;
+        document.getElementsByTagName("head")[0].appendChild(script);
+    });
+};
+```
+
+```C#
+internal static partial class HelpersProxy
+{
+    private const string baseJSNamespace = "globalThis";
+    [JSImport(baseJSNamespace + ".LoadScript")]s
+    public static partial Task
+        LoadScript(string relativeUrl);
+}
+
+// Usage:
+await HelpersProxy.LoadScript("https://code.jquery.com/jquery-3.7.1.min.js");
+```
+
+### Conditional Promises
+
+Methods that can return promises should consistently return a promise for all code paths.  If you have logic where certain circumstances do not need to execute awaitable code and should return immediately, then just return a resolved promise. This is necesary so that all code paths return some form of a promise for consistent handling by the caller:
+
+```JS
+HelpersProxy.LoadjQuery = function (relativeUrl) {
+    if (window.jQuery) {
+        // jQuery already loaded and ready to go, nothing to await
+        return Promise.resolve();// resolve immediately
+    } else {
+        return HelpersProxy.LoadScript(relativeUrl);
+    }
+};
+```
+
+## JS Declarations
+
+Many examples assign methods to `globalThis` for simplicity, but actual implementations should place JS declarations in a dedicated namespace or ES6 module to avoid naming conflicts with other libraries.  Modules are typically the more modern and recommended approach.
+
+One approach to creating dedicated namespaces without modules is using the IIFE (Immediately Invoked Function Expression) convention:
+
+```JS
+var Your = globalThis.Example || {}; // declare parent namespace if not declared yet
+(function (Example) {
+
+    var SomeProxy = Example.SomeProxy || {};// create child namespace if not declared yet
+
+    SomeProxy.LogMessage = function (arrayObject) {
+        console.log('did something');
+    }
+    
+    SomeProxy.AnotherMethod = function (arrayObject) {
+        return 1+2;
+    }
+
+    Example.SomeProxy = SomeProxy; // add child to parent namespace
+
+})(Example = globalThis.Example || (globalThis.Example = {}));
+```
+
+```C#
+internal static partial class SomeProxy
+{
+    private const string baseJSNamespace = "globalThis.Example.SomeProxy";
+
+    [JSImport(baseJSNamespace + ".LogMessage")]
+    public static partial Task
+        LogMessage(string relativeUrl);
+
+    [JSImport(baseJSNamespace + ".AnotherMethod")]
+    public static partial Task
+        AnotherMethod(string relativeUrl);
+}
+```
+
 
 ## Upcoming
 
-Additional examples are available in the Basic/Intermediate source code folders, and these examples will be expanded within the coming weeks.
-
+This readme will likely be ahead of the code examples, but there might be a few examples not covered here.  I'm working iteratively to better organize the content and examples while juggling other projects.
+    
 # Archived
 Approaches largely superceded by more recent capabilities/approaches.
 
-# Mapping Static JS Methods or Executing Arbitrary JS Using WebAssemblyRuntime (Discouraged/Legacy)
+## Mapping Static JS Methods or Executing Arbitrary JS Using WebAssemblyRuntime (Discouraged/Legacy)
 
 Expose static JS methods to C#:
 ```C#
@@ -308,6 +435,10 @@ GlobalProxyJS.AlertProxy("Hello World");
 
 > [!IMPORTANT] 
 > This approach should be avoided due to security risks of interoplating strings into javascript, where a string might be derived from user generated data upstream.  Mitigation is possible, but it is a potential security pitfall.
+
+## Async/Promoises with WebAssemblyRuntime.InvokeAsync (Discouraged/Legacy)
+
+PromisesWUno demonstrates legacy approaches to calling JS methods that return promises, and awaiting them in C#.
 
 ## Security.cs
 Demonstrates the risks of unencoded strings when building and executing javascript dynamically, and how to properly encode and fence string parameters passed from C# to JS to avoid XSS attacks that would attempt to abuse `InvokeJS`.  Note: This specific risk is not present when using .NET 7's JSImport/JSExport since javascript is not composed dynamically.
