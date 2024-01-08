@@ -1,7 +1,7 @@
 # SerratedWasmRecipes
-Collection of code snippets, utilities, and guidance for C# WASM, primarily focused on browser hosted WASM using Uno.Wasm.Bootstrap.  The focus being on non-Blazer and non-UnoPlatform applications, as there is already a wealth of examples and documentation for these, while less so for vanilla .NET/C# WASM.
+Collection of code snippets, utilities, and guidance for C# WASM, primarily focused on browser hosted WASM using Uno.Wasm.Bootstrap.  The focus being on non-Blazer and non-UnoPlatform applications, as there is already a wealth of examples and documentation for these, while less so for platform agnostic .NET/C# WASM.  There are a multitude of options for interop between C# and JS types.  The history of feature gaps in WASM spec and implementations has led to varied approaches of filling the gaps.  Many examples and tutorials online are specific to Uno Platform or Blazor, and may or may not work in Uno.Bootstrap.Wasm.
 
-There are a multitude of options for interop between C# and JS types.  The history of feature gaps in WASM spec and implementations has led to varied approaches of filling the gaps.  Many examples and tutorials online are specific to Uno Platform or Blazor, and may or may not work in Uno.Bootstrap.Wasm.  Here we focus on solutions that work with Uno.Bootstrap.Wasm in the absence of Blazor or Uno Platform UI frameworks, to eliminate some of the guess work and helping devs identify a solution appropriate to their needs.
+Here we focus on solutions that work with Uno.Bootstrap.Wasm in the absence of Blazor or Uno Platform UI frameworks, to eliminate some of the guess work and helping devs identify a solution appropriate to their needs.  I am a full stack developer with nearly 20 years of experience, and have been working with WASM for about 2 years.  The following represents approaches I've developed and believe to be effective, however I am not an expert in WebAssembly.  Official documentation may differ, but I created this resource because I've found official documentation to sometimes be out of date, incomplete, or biased towards a platform specific approach.
 
 ## Interop Supporting Runtimes
 
@@ -24,6 +24,35 @@ Additional Packages:
 > There are some type names that exist in both WebAssemblyRuntime and System.Runtime.InteropService.Javascript, such as JSObject.  Be mindful of what namespaces you have declared in `using`, or fully qualify, to avoid confusing compilation errors.  A project can leverage both capabilities in different places, but should not mix them for a given C#/JS function/type mapping.
 
  The WebAssemblyRuntime package or .NET 7 InteropServices namespace can also be used from class library projects implementing interop wrappers which are intended for consumption in a Uno.Boostrap.Wasm project.  The library would typically not reference Uno.Bootstrap.Wasm, as that's only needed for the root Console project with a `Main` entry point that would be compiled into a WebAssembly package.
+
+
+## Architecture
+
+### Runtime Dependencies
+
+WebAssembly/WASM support is dependent upon the browser's support for the WebAssembly standard, and is currently supported by the newest version of all major browsers: https://caniuse.com/?search=WebAssembly
+
+Otherwise at runtime the resulting WASM package is platform agnostic, and there is no external dependency on specific hosting technologies, web application technologies, or programming languages.  At runtime, any HTML page that can load and execute the embedded.js bootstrapper will be able to successfully load and execute the WASM package.
+
+### Interop
+
+WASM interfaces with the web application or HTML page client side through javascript, known as JS interop, and/or via traditional web requests against the backend host such as REST.  Using native .NET 7 JS interop, static JS methods can be called from .NET.  Arbitrary JS cannot be executed via this approach, thus typical implementations require a JS implementation to act as a shim for the .NET interop.  In turn, JSExport'd methods can be accessed from an existing web application's client side JS as though they were static methods exposed from a traditional JS library.  WASM also supports JS promises and events offering additional integration options.  
+
+The WASM package does not have direct access to all browser capabilities, but JS shims can be used to access those capabilities indirectly.  For example, access to the HTML DOM can be implemented by JSImport'ing JS shims calling native JS methods such as findElementById or creating a wrapper around a library such as jQuery as is done in SerratedJQ.
+
+.NET 7 WASM supports HttpClient, allowing requests to be made directly to the backend host using tradtiional web requests that would be compatible with any hosting technology exposing traditional HTTP endpoints.  This could be used to retrieve HTML fragements, or JSON data models, either of which could be used to data driven logic or dynamically updating HTML.
+
+The Uno WebAssemblyRuntime library provides methods to execute arbitrary javascript from .NET, but this should generally only be used for static JS that is not parameterized nor dynamic, due to security risks of dynamic JS.  It can be useful for creating JS declarations for the interop shims since these consist of static JS.
+
+### Hosting
+
+At runtime, the WASM package files will be downloaded from the server the same way static files such as images or JS would be downlaoded, and then executed within the browser.  This is completely hosting platform agnostic, since from the host's perspective it is a simple file download request.  Often the host will need to be configured to allow files with *.clr and *.dat extensions to be downloaded, tyipically accomplished by adding mime types.  
+
+### Loading the WASM Package at Runtime
+
+The HTML pages will need to reference the appropriate javascript to load the WASM packages.  Javascript files included by Uno.Bootstrap handle the initial loading of the runtime.  For example, if using EmbeddedMode, then a script tag referencing the WASM package's `embedded.js` would handle bootstrapping the WASM package, then execute our WASM entry point which is the console project's `Program.Main()`.
+
+The WASM package can either be hosted from the same site as the primary application, or in a seperate application.  Similar to any other javascript, it can be loaded from a relative URL (hosted in a subpath of the web app) or from another site.
 
 ## JS Interop Scenarios
 This section deals primarily with exposing types or methods from JS to C#, with the intention of allowing C# code to call into JS, or hold references to JS objects.
@@ -54,7 +83,9 @@ globalThis.alertProxy = function (text) {
 }
 ```
 
-Mapping it to a C# method:
+The above is what we would call the JS proxy or JS shim.  "Shim" being a building construction term for a piece of material used to close the gap between two structures. In this case it "fills the gap" between our .NET implementation and existing JS capabilities.
+
+Mapping it to a C# method proxy:
 ```C# 
 public partial class GlobalProxyJS
 {
@@ -103,6 +134,104 @@ This method can still be useful for generating JS type/method declarations from 
 WebAssemblyRuntime.InvokeJS(YourAssembly.EmbeddedFiles.SomeJSFile);
 ```
 
+### JS Object References
+
+#### Using .NET 7 JSObject
+
+The System.Runtime.InteropServices.JavaScript.JSObject type can be used in function signatures as parameters or return types in `[JSImport]`/`[JSExport]` attributed methods and represents a reference to a javascript object.  (Warning: Uno.Foundation.Interop contains a different legacy JSObject type that will not work in the below examples.)
+
+```C#
+using System.Runtime.InteropService.JavaScript;
+public partial class JSObjectExample
+{    
+        [JSImport("globalThis.JSON.parse")]
+        public static partial JSObject GetJsonAsJSObject(string jsonString);
+
+        [JSImport("globalThis.console.log")]
+        public static partial void ConsoleLogJSObject(JSObject obj);
+}
+
+//Usage:
+JSObject jsObj = JSObjectExample.GetJsonAsJSObject("""{"firstName":"Crow","middleName":"T","lastName":"Robot"}""");
+JSObjectExample.ConsoleLogJSObject(jsObj);
+```
+
+The GetJsonAsJSObject method takes a string, then deserializes to an JS object, and returns the JSObject reference.
+
+Browser Console Output:
+![image](https://github.com/SerratedSharp/CSharpWasmRecipes/assets/97156524/317a6793-2783-4ddd-a5ce-0df12acc5f1a)
+
+#### Accessing JSObject Properties
+
+Just about any property or method of a JSObject can be accessed by declaring a JSProxy and implementing custom JS:
+
+```JS
+// Concatenate first, middle, and last name:
+globalThis.concatenateName = function (nameObject) {
+	return obj.firstName + " " + obj.middleName + " " + obj.lastName;
+}
+```
+
+```C#
+public partial class JSObjectExample
+{
+    [JSImport("globalThis.concatenateName")]
+    public static partial string ConcatenateName(JSObject nameObject);
+}
+// Usage:
+JSObject jsObj = JSObjectExample.GetJsonAsJSObject("""{"firstName":"Crow","middleName":"T","lastName":"Robot"}""");
+string fullName = JSObjectExample.ConcatenateName(jsObj);
+```
+
+The above may be appropriate where multiple operations can occur in a single JS interop call.  Alternatively, the JSObject exposes a series of methods for accessing or setting properties of the underlying type:
+![image](https://github.com/SerratedSharp/CSharpWasmRecipes/assets/97156524/e24684e6-12be-4ab0-b972-f6e7a47d6bcb)
+
+```C#
+JSObject jsObj = JSObjectExample.GetJsonAsJSObject(
+    """
+    {
+        "firstName":"Crow",
+        "middleName":"T",
+        "lastName":"Robot",
+        "innerObj":
+        {
+            "prop1":"innerObj Prop1 Value",
+            "prop2":"innerObj Prop2 Value"
+        }
+    }
+    """);
+    
+// Store a reference in JS globalThis to dmeonstrate by ref modification
+JSHost.GlobalThis.SetProperty("jsObj", jsObj); 
+
+JSObjectExample.ConsoleLogJSObject(jsObj);
+string lastName = jsObj.GetPropertyAsString("lastName");
+Console.WriteLine("LastName: " + lastName); // "LastName: Robot"
+Console.WriteLine("Type: " + jsObj.GetType()); // "Type: System.Runtime.InteropServices.JavaScript.JSObject"
+Console.WriteLine("lastName Type: " + jsObj.GetTypeOfProperty("lastName")); // "lastName Type: string"
+
+Console.WriteLine("innerObj Type: " + jsObj.GetTypeOfProperty("innerObj")); // "innerObj Type: object"
+JSObject innerObj = jsObj.GetPropertyAsJSObject("innerObj");            
+string innerProp1 = innerObj.GetPropertyAsString("prop1"); 
+Console.WriteLine("innerProp1: " + innerProp1); // "innerProp1: innerObj Prop1 Value"
+
+innerObj.SetProperty("prop1", "Update Value");
+Console.WriteLine("innerObj.innerProp1: " + innerObj.GetPropertyAsString("prop1")); // "innerObj.innerProp1: Update Value"
+
+innerObj.SetProperty("prop3", "Value of Added Property"); // Add new property
+Console.WriteLine("innerObj.innerProp3: " + innerObj.GetPropertyAsString("prop3")); // "innerObj.innerProp3: Value of Added Property"
+```
+
+Modifying or adding properties in this way via the JSObject reference will also affect the original JS object if there were references to it from JavaScript as we can see with the object reference we assigned to globalThis:
+```C#
+JSObjectExample.Log("jsObj: ", jsObj);
+JSObject originalObj = JSHost.GlobalThis.GetPropertyAsJSObject("jsObj");
+JSObjectExample.Log("originalObj: ", originalObj);
+```
+
+Comparing the reference we modified throughout the code with the original reference we stored and retrieved from JS globalThis, we see the new and modified properties are reflected in the original JS object we stored in globalThis:
+![image](https://github.com/SerratedSharp/CSharpWasmRecipes/assets/97156524/5554e8a5-0a36-47d8-8a15-3a85b4bebff2)
+
 ### Instances and Instance Methods
 
 .NET 7 provides the JSObject (in System.Runtime.InteropServices.JavaScript) type that represent a javascript object reference.  Think of this type as being similar to an `object`, in that it is not strongly typed and can hold a reference to any JS type.  Although the type exposes limited functionality, the ability to hold a reference to a JS Object from .NET and return/pass it across the interop layer opens up a multitude of capabilities.  Wrappers composed of JSObject references and proxy methods/properties can present a strongly typed interface for JS types.  For example, SerratedJQ's JQueryPlainObject is a strongly typed wrapper for JQuery objects and internally uses a JSObject for the reference to the JQuery object instance.
@@ -111,11 +240,9 @@ Because .NET 7 doesn't currently support importing JS instance methods directly,
 
 Note: VS2022 can often autoamtically add Uno.Foundation.Interop using for the incorrect JSObject causing confusing compilation errors.
 
-#### Using .NET 7 JSObject
+#### JSObject Wrappers
 
-The System.Runtime.InteropService.Javascript.JSObject type can be used in function signatures as parameters or return types in `[JSImport]`/`[JSExport]` attributed methods and represents a reference to a javascript object.
-
-Let's look at developing an interface for interacting with JS types from C#.  We'll use vanilla HTML elements and HTML DOM methods as our example, but this same approach can be applied to custom JS types.
+Let's look at developing an interface for interacting with JS types from C#.  We'll use vanilla HTML elements and HTML DOM methods as our example, but this same approach can be applied to custom JS types.  This demonstrates one opinionated approach to mapping JS instance methods, but demonstrates the fundamentals that would be used in some form by most approaches.
 
 Declaring static javascript methods:
 ```js
