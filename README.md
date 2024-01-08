@@ -189,6 +189,11 @@ The above may be appropriate where multiple operations can occur in a single JS 
 ![image](https://github.com/SerratedSharp/CSharpWasmRecipes/assets/97156524/e24684e6-12be-4ab0-b972-f6e7a47d6bcb)
 
 ```C#
+    internal class Program
+    {
+        static async Task Main(string[] args)
+        {
+
 JSObject jsObj = JSObjectExample.GetJsonAsJSObject(
     """
     {
@@ -222,6 +227,8 @@ Console.WriteLine("innerObj.innerProp1: " + innerObj.GetPropertyAsString("prop1"
 
 innerObj.SetProperty("prop3", "Value of Added Property"); // Add new property
 Console.WriteLine("innerObj.innerProp3: " + innerObj.GetPropertyAsString("prop3")); // "innerObj.innerProp3: Value of Added Property"
+}
+}
 ```
 
 Modifying or adding properties in this way via the JSObject reference will also affect the original JS object if there were references to it from JavaScript as we can see with the object reference we assigned to globalThis:
