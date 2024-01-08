@@ -159,6 +159,7 @@ JSObjectExample.ConsoleLogJSObject(jsObj);
 The GetJsonAsJSObject method takes a string, then deserializes to an JS object, and returns the JSObject reference.
 
 Browser Console Output:
+
 ![image](https://github.com/SerratedSharp/CSharpWasmRecipes/assets/97156524/317a6793-2783-4ddd-a5ce-0df12acc5f1a)
 
 #### Accessing JSObject Properties
@@ -184,6 +185,7 @@ string fullName = JSObjectExample.ConcatenateName(jsObj);
 ```
 
 The above may be appropriate where multiple operations can occur in a single JS interop call.  Alternatively, the JSObject exposes a series of methods for accessing or setting properties of the underlying type:
+
 ![image](https://github.com/SerratedSharp/CSharpWasmRecipes/assets/97156524/e24684e6-12be-4ab0-b972-f6e7a47d6bcb)
 
 ```C#
@@ -230,6 +232,7 @@ JSObjectExample.Log("originalObj: ", originalObj);
 ```
 
 Comparing the reference we modified throughout the code with the original reference we stored and retrieved from JS globalThis, we see the new and modified properties are reflected in the original JS object we stored in globalThis:
+
 ![image](https://github.com/SerratedSharp/CSharpWasmRecipes/assets/97156524/5554e8a5-0a36-47d8-8a15-3a85b4bebff2)
 
 ### Instances and Instance Methods
