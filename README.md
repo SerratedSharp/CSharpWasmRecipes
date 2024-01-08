@@ -1,7 +1,4 @@
-<!--ts-->
-   * [Test](#serratedwasmrecipes)
-<!--te-->
-
+Access the table of contents via the ![image](https://github.com/SerratedSharp/CSharpWasmRecipes/assets/97156524/0923e055-9868-4246-af21-2ff65616797b) icon.
 
 # SerratedWasmRecipes
 Collection of code snippets, utilities, and guidance for C# WASM, primarily focused on browser hosted WASM using Uno.Wasm.Bootstrap.  The focus being on non-Blazer and non-UnoPlatform applications, as there is already a wealth of examples and documentation for these, while less so for platform agnostic .NET/C# WASM.  There are a multitude of options for interop between C# and JS types.  The history of feature gaps in WASM spec, rapid evolution, and implementations has led to varied approaches.
