@@ -1,4 +1,5 @@
-﻿using System.Runtime.InteropServices.JavaScript;
+﻿using System;
+using System.Runtime.InteropServices.JavaScript;
 
 namespace UnoBootstrap.Recipes.WasmClient.Basic
 {
@@ -12,7 +13,11 @@ namespace UnoBootstrap.Recipes.WasmClient.Basic
         public static partial JSObject FindElement(string id);
 
         [JSImport("globalThis.getClass")]
-        public static partial string GetClass(JSObject obj);
+        public static partial string GetClass(JSObject elementObj);
+
+        [JSImport("globalThis.subscribeEvent")]
+        public static partial string SusbcribeEvent(JSObject elementObj, string eventName, 
+            [JSMarshalAs<JSType.Function<JSType.Object>>] Action<JSObject> listener);
 
         [JSImport("globalThis.JSON.parse")]
         public static partial JSObject GetJsonAsJSObject(string jsonString);

@@ -43,7 +43,10 @@ namespace UnoBootstrap.Recipes.WasmClient
             // Declare static JS functions to act as proxies, which will then be mapped with JSImport.  (Could have been included/loaded using js/typescript instead)
             WebAssemblyRuntime.InvokeJS("""
                 globalThis.findElement = function(id) { return document.getElementById(id); }
-                globalThis.getClass = function(obj) { return obj.getAttribute('class'); }
+                globalThis.getClass = function(elementObj) { return elementObj.getAttribute('class'); }
+                globalThis.subscribeEvent = function(elementObj, eventName, listenerFunc) { 
+                    return elementObj.addEventListener( eventName, listenerFunc, false ); 
+                } 
                 """);
 
             // Note findElement returns an object, and getClass takes an object as a parameter.
@@ -55,6 +58,11 @@ namespace UnoBootstrap.Recipes.WasmClient
             // Pass the handle to another method that calls in instance method on the object:
             var elementClasses = Basic.JSObjectExample.GetClass(element);
             Console.WriteLine("Class string: " + elementClasses);
+
+            Basic.JSObjectExample.SusbcribeEvent(element, "click", (eventObj) => {
+                Console.WriteLine($"Event fired with event type via interop property '{eventObj.GetPropertyAsString("type")}'");
+                JSObjectExample.Log(eventObj);
+            });
 
             // Using WebAssemblyRuntime based instance wrapper 
             Advanced.ElementWrapper elementWrapper = Advanced.ElementWrapper.GetElementById("uno-body");
@@ -98,7 +106,7 @@ namespace UnoBootstrap.Recipes.WasmClient
             JSObjectExample.Log("jsObj: ", jsObj);
             JSObject originalObj = JSHost.GlobalThis.GetPropertyAsJSObject("jsObj");
             JSObjectExample.Log("originalObj: ", originalObj);
-            
+
 
 
 
