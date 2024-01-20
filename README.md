@@ -1,11 +1,11 @@
 Access the table of contents via the ![image](https://github.com/SerratedSharp/CSharpWasmRecipes/assets/97156524/49113928-1bd7-4e7c-8c28-b1aafa035744) icon.
 
-# SerratedWasmRecipes
-Collection of code snippets, utilities, and guidance for C# WASM, primarily focused on browser hosted WASM using Uno.Wasm.Bootstrap.  The focus being on non-Blazer and non-UnoPlatform applications, as there is already a wealth of examples and documentation for these, while less so for platform agnostic .NET/C# WASM.  There are a multitude of options for interop between C# and JS types.  The history of feature gaps in WASM spec, rapid evolution, and implementations has led to varied approaches.
+# C# WASM Recipes
+Collection of code snippets, utilities, and guidance for C# WASM, primarily focused on browser hosted WASM using Uno.Wasm.Bootstrap.  The focus being on non-Blazor and non-UnoPlatform applications, as there is already a wealth of examples and documentation for these, while less so for platform agnostic .NET/C# WASM.  There are a multitude of options for interop between C# and JS types.  The history of feature gaps in WASM spec, rapid evolution, and implementations has led to varied approaches.
 
 We focus on platform agnostic solutions with Uno.Bootstrap.Wasm in the absence of Blazor or Uno Platform UI frameworks.  Many of the examples, tutorials, and documentation online are specific to Uno Platform or Blazor, and may not work in Uno.Bootstrap.Wasm. This documentation focuses on  platform agnostic approaches to eliminate some of the guess work and help devs identify a solution appropriate to their needs.
 
-I am a full stack developer with nearly 20 years of experience, and have been working with WASM for about 2 years.  The following represents approaches I've developed and believe to be effective, however I am not an expert in WebAssembly.  Official documentation may differ, but I created this resource because I've found official documentation to sometimes be out of date, incomplete, or biased towards a platform specific approach.
+I am a full stack developer with nearly 20 years of .NET experience, and have been working with WASM for about 2 years.  The following represents approaches I've developed and believe to be effective, however I am not an expert in WebAssembly.  Official documentation may differ, but I created this resource because I've found official documentation to sometimes be out of date, incomplete, or biased towards a platform specific approach.
 
 ## Interop Supporting Runtimes
 
@@ -21,12 +21,13 @@ Additional Packages:
 - **Uno.Bootstrap.Wasm**: Tooling for compiling and packaging our .NET assembly as a WebAssembly/WASM package, along with all the javascript necessary for loading(i.e. **bootstrap**ping) the WASM into the browser.  This is only intended for use in the root project which will be the entry point for the WebAssembly.  Other class libraries/projects referenced do not need to reference this package.   (Note, no relation to the Bootstrap CSS/JS frontend framework.)  The name "Bootstrap" refers to similar terminology used for loading operating systems, as it "pulls itself up by its bootstraps".
 - **Uno.Wasm.Bootstrap.DevServer**: Provides a self-hosted HTTP server for serving static WASM files locally and supporting debugging browser link to enable breakpoints and stepping through C# code in the IDE while it is running as WASM inside the browser.  This package is useful during local development, but would likely be eliminated when hosted in test/production, where you would likely package the WASM package and related javascript files to be served statically from a traditional web server.  For example, I would include the WASM package as a subfolder of my ASP.NET MVC project's wwwroot to be served as static files.
 - **Uno.UI.WebAssembly**: At one time this package generated some javascript declarations that WebAssemblyRuntime was dependent on. For example, `WebAssemblyRuntime.InvokeAsync()` would fail at runtime if this package had not been included. At least since 8.* release, this package is no longer required for vanilla WASM projects.
-- **SerratedSharp.JSInteropHelpers**: A library of helper methods that I've used in my own interop implementations that reduces the amount of boilerplate code needed to call JS methods (both static and instance) from C#.  This library is less refined as it is primarily used internally to support my own JS interop implementations, but it has been key in allowing me to implement large surface areas of JS library APIs quickly.  I hope to refine this library for other JS interop/wrapper implementers to use in the future.  Usage examples can be found within SerratedJQ implementation: [JQueryPlainObject.cs](https://github.com/SerratedSharp/SerratedJQ/blob/main/SerratedJQLibrary/SerratedJQ/Plain/JQueryPlainObject.cs)
+- **SerratedSharp.JSInteropHelpers**: An optional library of helper methods for implementing interop. Reduces the amount of boilerplate code needed to call JS methods (both static and instance) from C#.  This library is less refined as it is primarily used internally to support my own JS interop implementations, but it has been key in allowing me to implement large surface areas of JS library APIs quickly.  I hope to refine this library for other JS interop/wrapper implementers to use in the future.  Usage examples can be found within SerratedJQ implementation: [JQueryPlainObject.cs](https://github.com/SerratedSharp/SerratedJQ/blob/main/SerratedJQLibrary/SerratedJQ/Plain/JQueryPlainObject.cs)
+- **SerratedSharp.SerratedJQ**: An optional .NET wrapper for jQuery to enable expressive access and event handling of the HTML DOM from WebAssembly.
 
 > [!IMPORTANT] 
 > There are some type names that exist in both WebAssemblyRuntime and System.Runtime.InteropService.Javascript, such as JSObject.  Be mindful of what namespaces you have declared in `using`, or fully qualify, to avoid confusing compilation errors.  A project can leverage both capabilities in different places, but should not mix them for a given C#/JS function/type mapping.
 
- The WebAssemblyRuntime package or .NET 7 InteropServices namespace can also be used from class library projects implementing interop wrappers which are intended for consumption in a Uno.Boostrap.Wasm project.  The library would typically not reference Uno.Bootstrap.Wasm, as that's only needed for the root Console project with a `Main` entry point that would be compiled into a WebAssembly package.
+ The WebAssemblyRuntime package or .NET 7 InteropServices namespace can also be used from class library projects implementing interop wrappers which are intended for consumption in a Uno.Boostrap.Wasm project.  The library would typically **not** reference Uno.Bootstrap.Wasm, as that's only needed for the root Console project with a `Main` entry point, and thus would be compiled into a WebAssembly package.
 
 ## Architecture and Debugging
 
@@ -386,7 +387,7 @@ string response = await RequestsProxy.FunctionReturningPromisedString("https://w
 
 ### C# Awaiting an Event Exposed as a JS Promise
 
-Sometimes it is necessary to guarantee that an operation has completed before continuing execution, but some older JS APIs only signal completion using JS events rather than returning promises.  We can wrap the event in a new JS promise, and then C# code can await the promise.  Note this is not appropriate for all events, and it is possible for JS events to raise C# events. (TODO: Document event subscription) 
+Sometimes it is necessary to guarantee that an operation has completed before continuing execution, but some older JS APIs only signal completion using JS events rather than returning promises.  We can wrap the event in a new JS promise, and then C# code can await the promise.  Note this is not appropriate for all events.  See **Events** section for methods of subscribing to JS events from C#.
 
 This JS creates a `<script>` element to load a javascript file, and exposes the `onload` event as a promise that resolves when the script is loaded.  This is useful for awaiting the loading of a JS library.
 
@@ -439,7 +440,7 @@ HelpersProxy.LoadjQuery = function (relativeUrl) {
 
 ## Events
 
-### Listeniong to JS Events with C# Handlers
+### Listening to JS Events with C# Action/Method Handlers
 
 Declare a static JS function to rpoxy the call to `addEvenetListener`:
 ```JS
@@ -450,7 +451,7 @@ globalThis.subscribeEvent = function(elementObj, eventName, listenerFunc) {
 
 Import the static JS function into C#:
 ```C#
-public partial class JSObjectExample
+public partial class EventsProxy
 {
     [JSImport("globalThis.subscribeEvent")]
     public static partial string SusbcribeEvent(JSObject elementObj, string eventName, 
@@ -460,17 +461,90 @@ public partial class JSObjectExample
 
 Pass an action method that will act as the event listener: 
 ```C#
-JSObjectExample.SusbcribeEvent(element, "click", (eventObj) => {
-    Console.WriteLine($"Event fired with event type via interop property '{eventObj.GetPropertyAsString("type")}'");
-    JSObjectExample.Log(eventObj);
-});
+JSObject element = SObjectExample.FindElement("#someBtnId"); // leverage our interop method implemented in other examples
+
+EventsProxy.SusbcribeEvent(element, "click", 
+    (JSObject eventObj) => {
+        Console.WriteLine($"Event fired with event type via interop property '{eventObj.GetPropertyAsString("type")}'");
+        JSObjectExample.Log(eventObj);
+    });
 ```
 
-The default event listener receives the JS event object as a JSObject reference, so properties must be accessed via interop.  
+Our C# event handler will be triggered each time the button element is clicked.
 
-The JS declaration can extract properties and pass additional primitive value parameters when firing the listener, or serialize it to JSON to allow C# code to deserialize it as an object(although this approach will loses object references such as *.currentTarget).
+We pass our event handler to the JSImport'd method's third parameter:
+```
+[JSMarshalAs<JSType.Function<JSType.Object>>] Action<JSObject> listener
+```
+
+
+
+
+
+
+As demonstrated above, we can access properties of the event parameter `JSObject eventObj` using JSObject's.GetPropertyAs\* methods.  For example, we might use `eventObj.GetPropertyAsJSObject("currentTarget")` to retrieve a reference to the HTMLElement and then pass this to other interop methods that might change the state of the button or retrieve data from the form.
+
+Approaches of interacting with the event object (some of which covered in examples elsewhere in this document):
+- Calling the JSObject's GetPropertyAs\* on the `eventObj`
+- Calling a JSImport'd method and passing the eventObj as a parameter, and allowing the JS shim to access or operate on the parameters.
+- Wrapping our `listenerFunc` in the JS shim implementation to either fully or partially serialize the eventObj to a JSON string before passing it the C# event handler where it can be deserialized.  This may have undesirable side affects since serializing a property such as event.currentTarget will lose it's reference as an HTMLElement.
+- Wrapping our `listenerFunc` in the JS shim implementation, extracting additional values from the eventObj or DOM, and passing them as additional parameters to our event listener.  Requires our event listener be declared with additional parameters.
+
+SerratedJQ uses an advanced approach, where it partially serializes the event object, and uses a visitor pattern to insert replacement placeholders and a preserve references to HTMLElement/jQueryObject references in an array.  An intermediate listener deserizlies the JSON, and restores the JSOBject references.  This hybrid approachs allows most primitive values of the event to be accessed naterually without interop, while specific references such as target/currentTarget properties can be acted on as JSObject's.  This is required where we would want to interact with \*.currentTarget's HTMLElement through interop.
 
 JS events can be exposed as classic C# events to present them using C# semantics.  SerratedJQ demonstrates this approach with JQueryPlainObject.OnClick and other similar events.
+
+#### Instance Methods as Event Listeners
+
+As demonstrated in the Alternative Syntaxes section, an instance method can be used as an event listener.  For example, this can be valuable when implementing a web component wrapper in C# that encapsulates an HTMLElement:
+- Ties the lifetime of the C# instance to the lifetime of the HTMLElement.  As long as the C# instance is subscribed to the event, and the JSObject reference publishing the event has not been garbage collected, then the C# instance will be preserved.
+- Allows the C# instance to include backing state/model data that is relevant to the HTMLElement.  Useful for cases where you may have a list of items and the listener needs to act on the backing data specific to the item clicked.  This is demonstrated in the SerratedJQSample project's [ProductSaleRow](https://github.com/SerratedSharp/SerratedJQ/blob/d2406a1b94334f6fc3ceba422e74f25d289004bb/SerratedJQSample/Sample.Wasm/ClientSideModels/ProductSaleRow.cs#L28) which wraps an HTML fragment as a component, proxies JS events, and includes backing model data in the event specific to that row/instance.  This allows downstream consumers of the component to subscribe to a strongly typed event which includes the model data, and hides the complexities of JS interop from the caller.
+
+#### Alternative Syntaxes for Declaring the Event Listener
+
+```C#
+// Using local Action variable as listener
+Action<JSObject> listener = (JSObject eventObj) =>
+{
+    Console.WriteLine($"[Local variable handler] Event fired with event type via interop property '{eventObj.GetPropertyAsString("type")}'");
+    JSObjectExample.Log(eventObj);
+};
+EventsProxy.SusbcribeEvent(element, "click", listener); 
+            
+EventsProxy.SusbcribeEvent(element, "click", ClickListener); // Using static function as listener
+            
+var instance = new SomeClass();
+EventsProxy.SusbcribeEvent(element, "click", instance.InstanceClickListener); // Using instance method as listener
+
+///...
+internal class Program
+{
+    // SubscribeEvent click listener static function
+    private static void ClickListener(JSObject eventObj)
+    {
+        Console.WriteLine($"[ClickListener handler] Event fired with event type via interop property '{eventObj.GetPropertyAsString("type")}'");
+        JSObjectExample.Log(eventObj);
+    }
+}
+
+public class SomeClass
+{
+    // SubscribeEvent click listener instance function
+    public void InstanceClickListener(JSObject eventObj)
+    {
+        Console.WriteLine($"[ClickListener handler] Event fired with event type via interop property '{eventObj.GetPropertyAsString("type")}'");
+        JSObjectExample.Log(eventObj);
+    }
+}
+```
+
+### Wrapping a JS Event as a C# Event
+
+
+### Triggering JS Events from C#
+
+
+
 
 TODO: Demonstrate limitation and workaround for passing arrays through events.
 

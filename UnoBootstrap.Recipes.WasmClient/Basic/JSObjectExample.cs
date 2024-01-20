@@ -14,13 +14,11 @@ namespace UnoBootstrap.Recipes.WasmClient.Basic
 
         [JSImport("globalThis.getClass")]
         public static partial string GetClass(JSObject elementObj);
-
-        [JSImport("globalThis.subscribeEvent")]
-        public static partial string SusbcribeEvent(JSObject elementObj, string eventName, 
-            [JSMarshalAs<JSType.Function<JSType.Object>>] Action<JSObject> listener);
-
+                
         [JSImport("globalThis.JSON.parse")]
         public static partial JSObject GetJsonAsJSObject(string jsonString);
+
+
 
         [JSImport("globalThis.console.log")]
         public static partial void ConsoleLogJSObject(JSObject obj);
@@ -35,6 +33,20 @@ namespace UnoBootstrap.Recipes.WasmClient.Basic
         {
             ConsoleLogUntypedArray(parameters);
         }
+
+    }
+
+    public partial class EventsProxy
+    {
+
+        [JSImport("globalThis.subscribeEvent")]
+        public static partial string SusbcribeEvent(JSObject elementObj, string eventName,
+            [JSMarshalAs<JSType.Function<JSType.Object>>] Action<JSObject> listener);
+
+        [JSImport("globalThis.subscribeEvent")]
+        public static partial string SusbcribeEventWithParameters(JSObject elementObj, string eventName,
+            [JSMarshalAs<JSType.Function<JSType.Object, JSType.String>>] Action<JSObject, string> listener);
+
 
     }
 

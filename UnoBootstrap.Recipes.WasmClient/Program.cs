@@ -47,6 +47,9 @@ namespace UnoBootstrap.Recipes.WasmClient
                 globalThis.subscribeEvent = function(elementObj, eventName, listenerFunc) { 
                     return elementObj.addEventListener( eventName, listenerFunc, false ); 
                 } 
+                globalThis.subscribeEventWithParameters = function(elementObj, eventName, listenerFunc) { 
+                    return elementObj.addEventListener( eventName, listenerFunc, false ); 
+                } 
                 """);
 
             // Note findElement returns an object, and getClass takes an object as a parameter.
@@ -59,10 +62,26 @@ namespace UnoBootstrap.Recipes.WasmClient
             var elementClasses = Basic.JSObjectExample.GetClass(element);
             Console.WriteLine("Class string: " + elementClasses);
 
-            Basic.JSObjectExample.SusbcribeEvent(element, "click", (eventObj) => {
-                Console.WriteLine($"Event fired with event type via interop property '{eventObj.GetPropertyAsString("type")}'");
+            // Using a lambda expression as a listener
+            EventsProxy.SusbcribeEvent(element, "click", (JSObject eventObj) => {
+                Console.WriteLine($"[Inline handler] Event fired with event type via interop property '{eventObj.GetPropertyAsString("type")}'");
                 JSObjectExample.Log(eventObj);
             });
+
+            // Using local Action variable as listener
+            Action<JSObject> listener = (JSObject eventObj) =>
+            {
+                Console.WriteLine($"[Local variable handler] Event fired with event type via interop property '{eventObj.GetPropertyAsString("type")}'");
+                JSObjectExample.Log(eventObj);
+            };
+            EventsProxy.SusbcribeEvent(element, "click", listener); 
+            
+            EventsProxy.SusbcribeEvent(element, "click", ClickListener); // Using static function as listener
+            
+            var instance = new SomeClass();
+            EventsProxy.SusbcribeEvent(element, "click", instance.InstanceClickListener); // Using instance method as listener
+
+
 
             // Using WebAssemblyRuntime based instance wrapper 
             Advanced.ElementWrapper elementWrapper = Advanced.ElementWrapper.GetElementById("uno-body");
@@ -107,10 +126,23 @@ namespace UnoBootstrap.Recipes.WasmClient
             JSObject originalObj = JSHost.GlobalThis.GetPropertyAsJSObject("jsObj");
             JSObjectExample.Log("originalObj: ", originalObj);
 
+        }
 
+        // SubscribeEvent click listener function
+        private static void ClickListener(JSObject eventObj)
+        {
+            Console.WriteLine($"[ClickListener handler] Event fired with event type via interop property '{eventObj.GetPropertyAsString("type")}'");
+            JSObjectExample.Log(eventObj);
+        }
+    }
 
-
-
+    public class SomeClass
+    {
+        // SubscribeEvent click listener function
+        public void InstanceClickListener(JSObject eventObj)
+        {
+            Console.WriteLine($"[ClickListener handler] Event fired with event type via interop property '{eventObj.GetPropertyAsString("type")}'");
+            JSObjectExample.Log(eventObj);
         }
     }
 
