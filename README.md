@@ -442,7 +442,7 @@ HelpersProxy.LoadjQuery = function (relativeUrl) {
 
 ### Listening to JS Events with C# Action/Method Handlers
 
-Declare a static JS function to rpoxy the call to `addEvenetListener`:
+Declare a static JS function to proxy the call to `addEvenetListener`:
 ```JS
 globalThis.subscribeEvent = function(elementObj, eventName, listenerFunc) { 
     return elementObj.addEventListener( eventName, listenerFunc, false ); 
@@ -477,12 +477,7 @@ We pass our event handler to the JSImport'd method's third parameter:
 [JSMarshalAs<JSType.Function<JSType.Object>>] Action<JSObject> listener
 ```
 
-
-
-
-
-
-As demonstrated above, we can access properties of the event parameter `JSObject eventObj` using JSObject's.GetPropertyAs\* methods.  For example, we might use `eventObj.GetPropertyAsJSObject("currentTarget")` to retrieve a reference to the HTMLElement and then pass this to other interop methods that might change the state of the button or retrieve data from the form.
+As demonstrated above, we can access properties of the event parameter `JSObject eventObj` using JSObject's.GetPropertyAs\* methods.  For example, we might use `eventObj.GetPropertyAsJSObject("target")` to retrieve `event.target` as a reference to the HTMLElement, then pass this to other interop methods that might change the state of the button or retrieve data from a parent form.
 
 Approaches of interacting with the event object (some of which covered in examples elsewhere in this document):
 - Calling the JSObject's GetPropertyAs\* on the `eventObj`
@@ -490,7 +485,10 @@ Approaches of interacting with the event object (some of which covered in exampl
 - Wrapping our `listenerFunc` in the JS shim implementation to either fully or partially serialize the eventObj to a JSON string before passing it the C# event handler where it can be deserialized.  This may have undesirable side affects since serializing a property such as event.currentTarget will lose it's reference as an HTMLElement.
 - Wrapping our `listenerFunc` in the JS shim implementation, extracting additional values from the eventObj or DOM, and passing them as additional parameters to our event listener.  Requires our event listener be declared with additional parameters.
 
-SerratedJQ uses an advanced approach, where it partially serializes the event object, and uses a visitor pattern to insert replacement placeholders and a preserve references to HTMLElement/jQueryObject references in an array.  An intermediate listener deserizlies the JSON, and restores the JSOBject references.  This hybrid approachs allows most primitive values of the event to be accessed naterually without interop, while specific references such as target/currentTarget properties can be acted on as JSObject's.  This is required where we would want to interact with \*.currentTarget's HTMLElement through interop.
+SerratedJQ uses an advanced approach, where it partially serializes the event object, and uses a visitor pattern to insert replacement placeholders and a preserve references to HTMLElement/jQueryObject references in an array.  An intermediate listener deserializes the JSON, and restores the JSOBject references.  This hybrid approachs allows most primitive values of the event to be accessed naterually without interop, while specific references such as target/currentTarget properties can be acted on as JSObject's.  This is required where we would want to interact with \*.currentTarget's HTMLElement through interop.
+
+#### Decomposing Event Parameters in the JS Shim
+
 
 JS events can be exposed as classic C# events to present them using C# semantics.  SerratedJQ demonstrates this approach with JQueryPlainObject.OnClick and other similar events.
 
