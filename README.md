@@ -11,9 +11,9 @@ The following represents approaches I've developed and believe to be effective. 
 
 It is helpful to be familiar with the ecosystem of different libraries and frameworks that provide JS interop capability within .NET:.
 
-- **.NET 7, System.Runtime.InteropServices.JavaScript**: .NET 6 included many JS interop capabilities and were expanded in .NET 7.  We'll refer to examples leveraging this capability as simply ".NET 7".  These are typically compatible with both Uno.Bootstrap.Wasm or Blazor.  In some ways it is more restrictive than prior Uno WebAssemblyRuntime capabilities because you cannot generate and execute arbitrary javascript on the fly nor interpolate javascript in C#, and requires more boilerplate code to accomplish similar tasks such as requiring two extra layers of instance method proxies for both the C# and JS layer (however techniques can mitigate the proliferation of these proxy methods).  Despite that, .NET 7's interop is a significant improvement:
+- **.NET 7, System.Runtime.InteropServices.JavaScript**: .NET 6 added many JS interop capabilities and were expanded in .NET 7.  We'll refer to examples leveraging this capability as simply ".NET 7".  These are typically compatible with both Uno.Bootstrap.Wasm and Blazor.  In some ways it is more restrictive than prior Uno WebAssemblyRuntime capabilities because you cannot generate and execute arbitrary javascript on the fly nor interpolate javascript in C#, and requires more boilerplate code to accomplish similar tasks such as requiring two extra layers of instance method proxies for both the C# and JS layer (however techniques can mitigate the proliferation of these proxy methods).  Despite that, .NET 7's interop is a significant improvement:
   - Prior approaches required JS objects or managed types to be explicitly marshaled which varied from easy to impossible in difficulty depending on the scenario.  Parameter fencing had to be carefully guarded for security, and managed types had to sometimes be manually pinned/unpinned.  This is a short list that doesn't fully explore the complexities of implementing interop prior to .NET 6.
-  - .NET 6/7 has native support for JS and managed object handles on both sides of the interop layer, ensures references across the interop boundary are not garbage collected prematurely, and ensures function parameters cannot break out of quotes/parameter contect.  Exporting and importing methods is more straightforward and passing references originating from JS is simplified.  **Overall using .NET 7's \*.InteropServices.JavaScript is the preferred approach.**
+  - .NET 7 has native support for JS and managed object handles on both sides of the interop layer, ensures references across the interop boundary are not garbage collected prematurely, and ensures function parameters cannot break out of quotes/parameter context.  Exporting and importing methods is more straightforward and passing references originating from JS is simplified.  **Overall using .NET 7's \*.InteropServices.JavaScript is the preferred approach.**
 - **Uno.Foundation.WebAssemblyRuntime/Uno.Foundation.Interop**: This provides the majority of legacy interop capabilities for Uno.Bootstrap.Wasm prior to first class support for interop in .NET. The Nuget package Uno.Foundation.Runtime.WebAssembly provides these capabilities, with the namespace Uno.Foundation.Interop containing most of the relevant types.  It is recommended to use .NET 7 capabilities instead where possible.  Additionally, some capabilities such as InvokeJSWithInterop were only intended for internal Uno use, and within Uno's codebase migration to .NET 7 approaches can be observed.  As such, most of my snippets for these approaches will be archived.
 - **Microsoft.JSInterop.IJSRuntime/JSRuntime**: Typically used by code specific to the Blazor framework.  *To my knowledge* this cannot be used in non-Blazor contexts such as Uno.Bootstrap.Wasm without hooks into the Host initialization that would typically instantiate and register the JSRuntime into the DI ServiceCollection.
 
@@ -24,16 +24,16 @@ Additional Packages:
 - **SerratedSharp.SerratedJQ**: An optional .NET wrapper for jQuery to enable expressive access and event handling of the HTML DOM from WebAssembly.
 
 > [!IMPORTANT] 
-> There are some type names that exist in both WebAssemblyRuntime and System.Runtime.InteropService.Javascript, such as JSObject.  Be mindful of what namespaces you have declared in `using`, or fully qualify, to avoid confusing compilation errors.  A project can leverage both capabilities in different places, but should not mix them for a given C#/JS function/type mapping.
+> Some type names exist in both WebAssemblyRuntime and System.Runtime.InteropService.Javascript, such as JSObject.  Be mindful of what namespaces you have declared in `using`, or fully qualify, to avoid confusing compilation errors.  A project can leverage both capabilities in different places, but should not mix them for a given C#/JS function/type mapping.
 
- The WebAssemblyRuntime package or .NET 7 InteropServices namespace can also be used from class library projects implementing interop wrappers which are intended for consumption in a Uno.Boostrap.Wasm project.  The library would typically **not** reference Uno.Bootstrap.Wasm, as that's only needed for the root Console project with a `Main` entry point, and thus would be compiled into a WebAssembly package.
+ The WebAssemblyRuntime package or .NET 7 InteropServices namespace can also be used from class library projects implementing interop wrappers which are intended for consumption in a Uno.Boostrap.Wasm project.  A class library would typically **not** reference Uno.Bootstrap.Wasm, as that's only needed for the root Console project with a `Main` entry point, and thus would be compiled into a WebAssembly package.
 
 ## Architecture and Debugging
 
 The [Architecture](Architecture.md) overview covers the structure of a new or existing website integrating a WebAssembly package, possible structures of Projects/Solution, and an overview of enabling debugging.  [SerratedJQSample](https://github.com/SerratedSharp/SerratedJQ/tree/main/SerratedJQSample) includes project configuration for debugging in VS2022, and debugging setup is included in the SerratedJQ [Quick Start Guide](https://github.com/SerratedSharp/SerratedJQ#quick-start-guide).  SerratedJQ is not a requirement (its purpose is to provide DOM access), and following the Quick Start guide while ommitting SerratedJQ will result in a basic project setup for an ASP.NET MVC web application which includes a WebAssembly package. 
 
 ## JS Interop Scenarios
-This section deals primarily with exposing types or methods from JS to C#, with the intention of allowing C# code to call into JS, or hold references to JS objects.
+Approaches of exposing types or methods from JS to C#.  Allows C# code to call into JS, or hold and pass references to JS objects.
 
 ### Importing Static JS Methods
 
@@ -45,7 +45,7 @@ public partial class JSGlobal
 {
     // mapping existing console.log to a C# method
     [JSImport("globalThis.console.log")]
-    public static partial void GlobalThisConsoleLog(string text);        
+    public static partial void GlobalThisConsoleLog(string text);
 }
     
 //... calling from WebAssembly Program.cs, we'd expect output to appear in the browser console
@@ -59,7 +59,7 @@ globalThis.alertProxy = function (text) {
 }
 ```
 
-The above is what we would informally call the JS proxy or JS shim.  In this case it shims or fills the gap between our .NET implementation and existing JS capabilities/libraries.  JS declarations such as this would be loaded from either a *.js resource or declared with InvokeJS.  Some opt to implement shims in typescript, but you will be need to be knowledgeable of the full javascript typename to ensure correct name is referenced from JSImport.
+The above is what we would informally call the JS proxy or JS shim.  In this case it shims or fills the gap between our .NET implementation and existing JS capabilities/libraries.  JS declarations such as this would be loaded from either a *.js resource or declared with InvokeJS.  Some opt to implement shims in typescript, but you will be need to be knowledgeable of the full javascript typename to ensurethe  correct name is referenced by JSImport.
 
 Mapping it to a C# method proxy:
 ```C# 
