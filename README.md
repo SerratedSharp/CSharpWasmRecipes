@@ -485,7 +485,7 @@ Approaches of interacting with the event object (some of which covered in exampl
 - Wrapping our `listenerFunc` in the JS shim implementation to either fully or partially serialize the eventObj to a JSON string before passing it the C# event handler where it can be deserialized.  This may have undesirable side affects since serializing a property such as event.currentTarget will lose it's reference as an HTMLElement.
 - Wrapping our `listenerFunc` in the JS shim implementation, extracting additional values from the eventObj or DOM, and passing them as additional parameters to our event listener.  Requires our event listener be declared with additional parameters.
 
-SerratedJQ uses an advanced approach, where it partially serializes the event object, and uses a visitor pattern to insert replacement placeholders and a preserve references to HTMLElement/jQueryObject references in an array.  An intermediate listener deserializes the JSON, and restores the JSOBject references.  This hybrid approachs allows most primitive values of the event to be accessed naterually without interop, while specific references such as target/currentTarget properties can be acted on as JSObject's.  This is required where we would want to interact with \*.currentTarget's HTMLElement through interop.
+SerratedJQ uses an advanced approach, where it partially serializes the event object, and uses a visitor pattern to insert replacement placeholders and a preserve references to HTMLElement/jQueryObject references in an array.  An intermediate listener deserializes the JSON, and restores the JSObject references.  This hybrid approachs allows most primitive values of the event to be accessed naterually without interop, while specific references such as target/currentTarget properties can be acted on as JSObject's.  This is required where we would want to interact with \*.currentTarget's HTMLElement through interop.
 
 #### Decomposing Event Parameters in the JS Shim
 
@@ -494,9 +494,30 @@ JS events can be exposed as classic C# events to present them using C# semantics
 
 #### Instance Methods as Event Listeners
 
-As demonstrated in the Alternative Syntaxes section, an instance method can be used as an event listener.  For example, this can be valuable when implementing a web component wrapper in C# that encapsulates an HTMLElement:
+An instance method can be used as an event listener.:
+
+```C#
+public class SomeClass
+{
+    // SubscribeEvent click listener instance function
+    public void InstanceClickListener(JSObject eventObj)
+    {
+        Console.WriteLine($"[ClickListener handler] Event fired with event type via interop property '{eventObj.GetPropertyAsString("type")}'");
+        JSObjectExample.Log(eventObj);
+    }
+}
+
+// Usage:
+var instance = new SomeClass();
+EventsProxy.SusbcribeEvent(element, "click", instance.InstanceClickListener); // Using instance method as listener
+```
+
+- Allows the handler to access state of the C# instance, allowing backing state/model data to be managed in C#.  Useful for cases where you may have a list of UI items and the listener needs to act on the backing data specific to the item clicked.
 - Ties the lifetime of the C# instance to the lifetime of the HTMLElement.  As long as the C# instance is subscribed to the event, and the JSObject reference publishing the event has not been garbage collected, then the C# instance will be preserved.
-- Allows the C# instance to include backing state/model data that is relevant to the HTMLElement.  Useful for cases where you may have a list of items and the listener needs to act on the backing data specific to the item clicked.  This is demonstrated in the SerratedJQSample project's [ProductSaleRow](https://github.com/SerratedSharp/SerratedJQ/blob/d2406a1b94334f6fc3ceba422e74f25d289004bb/SerratedJQSample/Sample.Wasm/ClientSideModels/ProductSaleRow.cs#L28) which wraps an HTML fragment as a component, proxies JS events, and includes backing model data in the event specific to that row/instance.  This allows downstream consumers of the component to subscribe to a strongly typed event which includes the model data, and hides the complexities of JS interop from the caller.
+- Allows the instance to expose a traditional C# event and present strongly typed C# data for the event, hiding the interop details from the downstream event consumer.
+
+For example, this can be valuable when implementing a web component wrapper in C# that encapsulates an HTMLElement:
+- This is demonstrated in the SerratedJQSample project's [ProductSaleRow](https://github.com/SerratedSharp/SerratedJQ/blob/d2406a1b94334f6fc3ceba422e74f25d289004bb/SerratedJQSample/Sample.Wasm/ClientSideModels/ProductSaleRow.cs#L28) which wraps an HTML fragment as a component, proxies JS events, and includes backing model data in the event specific to that row/instance.  This allows downstream consumers of the component to subscribe to a strongly typed event which includes the model data, and hides the complexities of JS interop from the caller.
 
 #### Alternative Syntaxes for Declaring the Event Listener
 
@@ -510,25 +531,12 @@ Action<JSObject> listener = (JSObject eventObj) =>
 EventsProxy.SusbcribeEvent(element, "click", listener); 
             
 EventsProxy.SusbcribeEvent(element, "click", ClickListener); // Using static function as listener
-            
-var instance = new SomeClass();
-EventsProxy.SusbcribeEvent(element, "click", instance.InstanceClickListener); // Using instance method as listener
 
 ///...
 internal class Program
 {
     // SubscribeEvent click listener static function
     private static void ClickListener(JSObject eventObj)
-    {
-        Console.WriteLine($"[ClickListener handler] Event fired with event type via interop property '{eventObj.GetPropertyAsString("type")}'");
-        JSObjectExample.Log(eventObj);
-    }
-}
-
-public class SomeClass
-{
-    // SubscribeEvent click listener instance function
-    public void InstanceClickListener(JSObject eventObj)
     {
         Console.WriteLine($"[ClickListener handler] Event fired with event type via interop property '{eventObj.GetPropertyAsString("type")}'");
         JSObjectExample.Log(eventObj);
