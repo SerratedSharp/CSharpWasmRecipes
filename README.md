@@ -7,9 +7,38 @@ Uno.Bootstrap.Wasm, a tool that is used independently of the Uno Platform UI fra
 
 The following represents approaches I've developed and believe to be effective.  Official documentation may differ, but I created this resource because I've found official documentation to sometimes be out of date, incomplete, or doesn't deliniate platform specific versus agnostic approaches.
 
+# C# WASM Overview
+
+When a .NET project is compiled to WebAssembly(WASM), the resulting package can be run in a browser that supports the WebAssembly runtime.  Compiling C#/.NET to the WebAssembly format enables several capabilities and benefits:
+
+- Run C#/.NET in the browser client-side using a secure sandbox.
+- Allows client side or UI logic to be implemented in C# in lieu of Javascript.
+- Ability to leverage the ecosystem of .NET frameworks and libraries to implement client side logic.
+- Implement reusable logic in C# which can be leveraged by existing Javascript implementations.
+- Improve developer productivity by reducing the impact of context switching between C# and Javascript.
+- Reduce duplication of logic such as API models and validation logic which would previously have been implemented both server-side and client-side in C# and Javascript respectively.
+- Optionally run client-side processing intensive code in a precompiled AoT (ahead-of-time) format.
+- Reduce server load where processing such as HTML templating can be offloaded client side.
+- Expands the ecosystem of code/logic sharing across platforms and programming languages.
+
+Unlike legacy technologies such as Silverlight which failed to achieve ubiquitous browser support, WebAssembly has been adopted as a web standard and is supported by all major browsers.
+
+Note that a C# WASM package can be used client side with any server side technology, and is not limited to ASP.NET.  The compiled WASM package is served and downloaded to the browser as static files, and then executed client side.  For example, a github.io page which only supports static content can serve a C# WASM package.
+
+In the case of WASI, where WebAssembly can be executed in other contexts besides the browser.  Much of the above applies and additionally:
+
+- Eliminates the need to have the .NET runtime installed on the target system.
+- Greater portability, allowing platforms and programming languages from diverse ecosystems to leverage a common execution model.
+- Reduce dependence on fragmented runtime/execution tooling.
+- Eliminate the need for tools/libraries/packages to be compiled locally to achieve portability.
+- Improve interoperability across tools/libraries.
+- Collectively reduce duplication of ubiquitous algorithms across platforms/languages.
+
+Note: I use the phrase "C# WASM" colloquially to refer to C# code compiled within a WebAssembly module.  It would be more accurate to refer to it as ".NET WASM", as any compatible .NET language could be used.
+
 ## Interop Supporting Runtimes
 
-It is helpful to be familiar with the ecosystem of different libraries and frameworks that provide JS interop capability within .NET:.
+It is helpful to be familiar with the ecosystem of different libraries and frameworks that provide JS interop capability within .NET:
 
 - **.NET 7, System.Runtime.InteropServices.JavaScript**: .NET 6 added many JS interop capabilities and were expanded in .NET 7.  We'll refer to examples leveraging this capability as simply ".NET 7".  These are typically compatible with both Uno.Bootstrap.Wasm and Blazor.  In some ways it is more restrictive than prior Uno WebAssemblyRuntime capabilities because you cannot generate and execute arbitrary javascript on the fly nor interpolate javascript in C#, and requires more boilerplate code to accomplish similar tasks such as requiring two extra layers of instance method proxies for both the C# and JS layer (however techniques can mitigate the proliferation of these proxy methods).  Despite that, .NET 7's interop is a significant improvement:
   - Prior approaches required JS objects or managed types to be explicitly marshaled which varied from easy to impossible in difficulty depending on the scenario.  Parameter fencing had to be carefully guarded for security, and managed types had to sometimes be manually pinned/unpinned.  This is a short list that doesn't fully explore the complexities of implementing interop prior to .NET 6.
@@ -30,7 +59,7 @@ Additional Packages:
 
 ## Architecture and Debugging
 
-The [Architecture](Architecture.md) overview covers the structure of a new or existing website integrating a WebAssembly package, possible structures of Projects/Solution, and an overview of enabling debugging.  [SerratedJQSample](https://github.com/SerratedSharp/SerratedJQ/tree/main/SerratedJQSample) includes project configuration for debugging in VS2022, and debugging setup is included in the SerratedJQ [Quick Start Guide](https://github.com/SerratedSharp/SerratedJQ#quick-start-guide).  SerratedJQ is not a requirement (its purpose is to provide DOM access), and following the Quick Start guide while ommitting SerratedJQ will result in a basic project setup for an ASP.NET MVC web application which includes a WebAssembly package. 
+The [Architecture](Architecture.md) overview covers the structure of a new or existing website integrating a WebAssembly package, possible structures of Projects/Solution, and an overview of enabling debugging.  [SerratedJQSample](https://github.com/SerratedSharp/SerratedJQ/tree/main/SerratedJQSample) includes project configuration for debugging in VS2022, and debugging setup is included in the SerratedJQ [Quick Start Guide](https://github.com/SerratedSharp/SerratedJQ#quick-start-guide).  SerratedJQ is not a requirement (its purpose is to provide DOM access), and following the Quick Start guide while ommitting SerratedJQ will result in a basic project setup for an ASP.NET MVC web application which includes a WebAssembly package for implementing client side logic. 
 
 ## JS Interop Scenarios
 Approaches of exposing types or methods from JS to C#.  Allows C# code to call into JS, or hold and pass references to JS objects.
