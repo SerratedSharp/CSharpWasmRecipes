@@ -9,7 +9,7 @@ A collection of code snippets and guidance for C# WASM, primarily focused on pla
 
 Uno.Bootstrap.Wasm, a tool that is used independently of the Uno Platform UI framework, is used as the tool for compiling to a WASM compatible format. Otherwise code and techniques largely focus on those that rely on .NET 7 JS interop capabilities, thus would work in either framework as well as without them. 
 
-The following represents approaches I've developed and believe to be effective.  Official documentation may differ, but I created this resource because I've found official documentation to sometimes be out of date, incomplete, or doesn't deliniate platform specific versus agnostic approaches.
+The following represents approaches I've developed and believe to be effective.  Official documentation may differ, but I created this resource because I've found official documentation to sometimes be out of date, incomplete, or doesn't delineate  platform specific versus agnostic approaches.
 
 # C# WASM Overview
 
@@ -59,11 +59,11 @@ Additional Packages:
 > [!IMPORTANT] 
 > Some type names exist in both WebAssemblyRuntime and System.Runtime.InteropService.Javascript, such as JSObject.  Be mindful of what namespaces you have declared in `using`, or fully qualify, to avoid confusing compilation errors.  A project can leverage both capabilities in different places, but should not mix them for a given C#/JS function/type mapping.
 
- The WebAssemblyRuntime package or .NET 7 InteropServices namespace can also be used from class library projects implementing interop wrappers which are intended for consumption in a Uno.Boostrap.Wasm project.  A class library would typically **not** reference Uno.Bootstrap.Wasm, as that's only needed for the root Console project with a `Main` entry point, and thus would be compiled into a WebAssembly package.
+ The WebAssemblyRuntime package or .NET 7 InteropServices namespace can also be used from class library projects implementing interop wrappers which are intended for consumption in a Uno.Bootstrap.Wasm project.  A class library would typically **not** reference Uno.Bootstrap.Wasm, as that's only needed for the root Console project with a `Main` entry point, and thus would be compiled into a WebAssembly package.
 
 ## Architecture and Debugging
 
-The [Architecture](Architecture.md) overview covers the structure of a new or existing website integrating a WebAssembly package, possible structures of Projects/Solution, and an overview of enabling debugging.  [SerratedJQSample](https://github.com/SerratedSharp/SerratedJQ/tree/main/SerratedJQSample) includes project configuration for debugging in VS2022, and debugging setup is included in the SerratedJQ [Quick Start Guide](https://github.com/SerratedSharp/SerratedJQ#quick-start-guide).  SerratedJQ is not a requirement (its purpose is to provide DOM access), and following the Quick Start guide while ommitting SerratedJQ will result in a basic project setup for an ASP.NET MVC web application which includes a WebAssembly package for implementing client side logic. 
+The [Architecture](Architecture.md) overview covers the structure of a new or existing website integrating a WebAssembly package, possible structures of Projects/Solution, and an overview of enabling debugging.  [SerratedJQSample](https://github.com/SerratedSharp/SerratedJQ/tree/main/SerratedJQSample) includes project configuration for debugging in VS2022, and debugging setup is included in the SerratedJQ [Quick Start Guide](https://github.com/SerratedSharp/SerratedJQ#quick-start-guide).  SerratedJQ is not a requirement (its purpose is to provide DOM access), and following the Quick Start guide while omitting SerratedJQ will result in a basic project setup for an ASP.NET MVC web application which includes a WebAssembly package for implementing client side logic. 
 
 ## JS Interop Scenarios
 Approaches of exposing types or methods from JS to C#.  Allows C# code to call into JS, or hold and pass references to JS objects.
@@ -92,7 +92,7 @@ globalThis.alertProxy = function (text) {
 }
 ```
 
-The above is what we would informally call the JS proxy or JS shim.  In this case it shims or fills the gap between our .NET implementation and existing JS capabilities/libraries.  JS declarations such as this would be loaded from either a *.js resource or declared with InvokeJS.  Some opt to implement shims in typescript, but you will be need to be knowledgeable of the full javascript typename to ensurethe  correct name is referenced by JSImport.
+The above is what we would informally call the JS proxy or JS shim.  In this case it shims or fills the gap between our .NET implementation and existing JS capabilities/libraries.  JS declarations such as this would be loaded from either a *.js resource or declared with InvokeJS.  Some opt to implement shims in typescript, but you will need to be knowledgeable of the full javascript typename to ensure the correct name is referenced by JSImport.
 
 Mapping it to a C# method proxy:
 ```C# 
@@ -332,7 +332,7 @@ public static partial class JSInstanceProxy
     [JSImport(baseJSNamespace + ".FuncByNameToObject")]
     [return: JSMarshalAs<JSType.Any>]
     public static partial
-        object FuncByNameAsObject(JSObject jqObject, string funcName, [JSMarshalAs<JSType.Array<JSType.Any>>] object[] parameters);
+        object FuncByNameAsObject(JSObject jsObject, string funcName, [JSMarshalAs<JSType.Array<JSType.Any>>] object[] parameters);
 }
 
 //Usage:
@@ -351,7 +351,7 @@ public class JQueryPlainObject : IJSObjectWrapper<JQueryPlainObject>, IJQueryCon
     internal JSObject jsObject;//  Handle to JS object, marked internal so other complementary static factory classes can wrap instances
     public JSObject JSObject { get { return jsObject; } }
 
-    // Most constructers aren't called directly by consumers, but thru static methods such as .Select
+    // Most constructors aren't called directly by consumers, but thru static methods such as .Select
     internal JQueryPlainObject() { }
 
     // Construct wrapper from JS object reference, not typically used and requires caller ensure the referenced instance is of the appropriate type
@@ -486,7 +486,7 @@ Import the static JS function into C#:
 public partial class EventsProxy
 {
     [JSImport("globalThis.subscribeEvent")]
-    public static partial string SusbcribeEvent(JSObject elementObj, string eventName, 
+    public static partial string SubscribeEvent(JSObject elementObj, string eventName, 
         [JSMarshalAs<JSType.Function<JSType.Object>>] Action<JSObject> listener);
 }
 ```
@@ -495,7 +495,7 @@ Pass an action method that will act as the event listener:
 ```C#
 JSObject element = SObjectExample.FindElement("#someBtnId"); // leverage our interop method implemented in other examples
 
-EventsProxy.SusbcribeEvent(element, "click", 
+EventsProxy.SubscribeEvent(element, "click", 
     (JSObject eventObj) => {
         Console.WriteLine($"Event fired with event type via interop property '{eventObj.GetPropertyAsString("type")}'");
         JSObjectExample.Log(eventObj);
@@ -514,10 +514,10 @@ As demonstrated above, we can access properties of the event parameter `JSObject
 Approaches of interacting with the event object (some of which covered in examples elsewhere in this document):
 - Calling the JSObject's GetPropertyAs\* on the `eventObj`
 - Calling a JSImport'd method and passing the eventObj as a parameter, and allowing the JS shim to access or operate on the parameters.
-- Wrapping our `listenerFunc` in the JS shim implementation to either fully or partially serialize the eventObj to a JSON string before passing it the C# event handler where it can be deserialized.  This may have undesirable side affects since serializing a property such as event.currentTarget will lose it's reference as an HTMLElement.
+- Wrapping our `listenerFunc` in the JS shim implementation to either fully or partially serialize the eventObj to a JSON string before passing it the C# event handler where it can be deserialized.  This may have undesirable side effects since serializing a property such as event.currentTarget will lose its reference as an HTMLElement.
 - Wrapping our `listenerFunc` in the JS shim implementation, extracting additional values from the eventObj or DOM, and passing them as additional parameters to our event listener.  Requires our event listener be declared with additional parameters.
 
-SerratedJQ uses an advanced approach, where it partially serializes the event object, and uses a visitor pattern to insert replacement placeholders and a preserve references to HTMLElement/jQueryObject references in an array.  An intermediate listener deserializes the JSON, and restores the JSObject references.  This hybrid approachs allows most primitive values of the event to be accessed naterually without interop, while specific references such as target/currentTarget properties can be acted on as JSObject's.  This is required where we would want to interact with \*.currentTarget's HTMLElement through interop.
+SerratedJQ uses an advanced approach, where it partially serializes the event object, and uses a visitor pattern to insert replacement placeholders and preserve references to HTMLElement/jQueryObject references in an array.  An intermediate listener deserializes the JSON, and restores the JSObject references.  This hybrid approach allows most primitive values of the event to be accessed naturally without interop, while specific references such as target/currentTarget properties can be acted on as a JSObject.  This is required where we would want to interact with \*.currentTarget's HTMLElement through interop.
 
 #### Decomposing Event Parameters in the JS Shim
 
