@@ -1,5 +1,9 @@
 Access the table of contents via the ![image](https://github.com/SerratedSharp/CSharpWasmRecipes/assets/97156524/49113928-1bd7-4e7c-8c28-b1aafa035744) icon.
 
+To improve readability, navigate [here](README.md) then collapse the files drawer:
+
+![image](https://github.com/SerratedSharp/CSharpWasmRecipes/assets/97156524/b850c806-7631-40b2-ac8d-e7cb4a10b386)
+
 # C# WASM Recipes
 A collection of code snippets and guidance for C# WASM, primarily focused on platform agnostic approaches that require neither Blazor nor Uno Platform UI frameworks.
 
