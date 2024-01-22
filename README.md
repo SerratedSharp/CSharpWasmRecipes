@@ -54,7 +54,7 @@ Additional Packages:
 - **Uno.Bootstrap.Wasm**: Tooling for compiling and packaging our .NET assembly as a WebAssembly/WASM package, along with all the javascript necessary for loading(i.e. **bootstrap**ping) the WASM into the browser.  This is only intended for use in the root project which will be the entry point for the WebAssembly.  Other class libraries/projects referenced do not need to reference this package.   (Note, no relation to the Bootstrap CSS/JS frontend framework.)  The name "Bootstrap" refers to similar terminology used for loading operating systems, as it "pulls itself up by its bootstraps".
 - **Uno.Wasm.Bootstrap.DevServer**: Provides a self-hosted HTTP server for serving static WASM files locally and supporting debugging browser link to enable breakpoints and stepping through C# code in the IDE while it is running as WASM inside the browser.  This package is useful during local development, but would likely be eliminated when hosted in test/production, where you would likely package the WASM package and related javascript files to be served statically from a traditional web server.  - **Uno.UI.WebAssembly**: At one time this package generated some javascript declarations that WebAssemblyRuntime was dependent on. For example, `WebAssemblyRuntime.InvokeAsync()` would fail at runtime if this package had not been included. At least since 8.* release, this package is no longer required for vanilla WASM projects.
 - **SerratedSharp.JSInteropHelpers**: An optional library of helper methods for implementing interop. Reduces the amount of boilerplate code needed to call JS methods (both static and instance) from C#.  This library is less refined as it is primarily used internally to support my own JS interop implementations, but it has been key in allowing me to implement large surface areas of JS library APIs quickly.  I hope to refine this library for other JS interop/wrapper implementers to use in the future.  Usage examples can be found within SerratedJQ implementation: [JQueryPlainObject.cs](https://github.com/SerratedSharp/SerratedJQ/blob/main/SerratedJQLibrary/SerratedJQ/Plain/JQueryPlainObject.cs)
-- **SerratedSharp.SerratedJQ**: An optional .NET wrapper for jQuery to enable expressive access and event handling of the HTML DOM from WebAssembly.
+- **SerratedSharp.SerratedJQ**: An optional .NET wrapper for jQuery to enable expressive access and event handling of the HTML DOM from WebAssembly.  Many of the examples below use native DOM APIs to demonstrate the fundamentals of JS interop.  However, if your goal is DOM access/manipulation/event-handling, then much of the JS shims and C# proxies can be omitted by using [SerratedJQ](https://github.com/SerratedSharp/SerratedJQ) instead.
 
 > [!IMPORTANT] 
 > Some type names exist in both WebAssemblyRuntime and System.Runtime.InteropService.Javascript, such as JSObject.  Be mindful of what namespaces you have declared in `using`, or fully qualify, to avoid confusing compilation errors.  A project can leverage both capabilities in different places, but should not mix them for a given C#/JS function/type mapping.
@@ -509,20 +509,17 @@ We pass our event handler to the JSImport'd method's third parameter:
 [JSMarshalAs<JSType.Function<JSType.Object>>] Action<JSObject> listener
 ```
 
+The `[JSMarshalAs<JSType.Function<...>>` attribute indicates we are passing a C# action as a parameter that should be callable from JS.  The template type parameters of `JStype.Function<...>` should correspond to the parameters of `Action<...>`.  In this case a `JSType.Object` corresponding to the `JSObject` indicates that the JS object will be marshaled as a C# JSObject reference.  This means our event handle should match this function signature, taking a single JSObject parameter, which will be a reference to the JS `event` object.
+
 As demonstrated above, we can access properties of the event parameter `JSObject eventObj` using JSObject's.GetPropertyAs\* methods.  For example, we might use `eventObj.GetPropertyAsJSObject("target")` to retrieve `event.target` as a reference to the HTMLElement, then pass this to other interop methods that might change the state of the button or retrieve data from a parent form.
 
 Approaches of interacting with the event object (some of which covered in examples elsewhere in this document):
 - Calling the JSObject's GetPropertyAs\* on the `eventObj`
 - Calling a JSImport'd method and passing the eventObj as a parameter, and allowing the JS shim to access or operate on the parameters.
-- Wrapping our `listenerFunc` in the JS shim implementation to either fully or partially serialize the eventObj to a JSON string before passing it the C# event handler where it can be deserialized.  This may have undesirable side effects since serializing a property such as event.currentTarget will lose its reference as an HTMLElement.
-- Wrapping our `listenerFunc` in the JS shim implementation, extracting additional values from the eventObj or DOM, and passing them as additional parameters to our event listener.  Requires our event listener be declared with additional parameters.
+- Wrapping our `listenerFunc` in the JS shim implementation to either fully or partially serialize the eventObj to a JSON string before passing it the C# event handler where it can be deserialized.  This may have undesirable side effects since serializing a property such as event.currentTarget will lose its reference as an HTMLElement.  
+- Wrapping our `listenerFunc` in the JS shim implementation, extracting additional values from the eventObj or DOM, and passing them as additional parameters to our event listener.  Requires our event listener be declared with additional parameters.  See [Decomposing Event Parameters in the JS Shim](#Decomposing-Event-Parameters-in-the-JS-Shim)
 
 SerratedJQ uses an advanced approach, where it partially serializes the event object, and uses a visitor pattern to insert replacement placeholders and preserve references to HTMLElement/jQueryObject references in an array.  An intermediate listener deserializes the JSON, and restores the JSObject references.  This hybrid approach allows most primitive values of the event to be accessed naturally without interop, while specific references such as target/currentTarget properties can be acted on as a JSObject.  This is required where we would want to interact with \*.currentTarget's HTMLElement through interop.
-
-#### Decomposing Event Parameters in the JS Shim
-
-
-JS events can be exposed as classic C# events to present them using C# semantics.  SerratedJQ demonstrates this approach with JQueryPlainObject.OnClick and other similar events.
 
 #### Instance Methods as Event Listeners
 
@@ -576,15 +573,76 @@ internal class Program
 }
 ```
 
+#### Decomposing Event Parameters in the JS Shim
+To avoid additional interop roundtrips, we can decompose the event object into seperate parameters.  In this example we retrieve the name of the event fired(`event.type`) and the element clicked(`event.target`) to be passed as additional parameters.
+
+```JS
+    globalThis.subscribeEventWithParameters = function(elementObj, eventName, listenerFunc) { 
+        let intermediateListener = function(event) { 
+            // decompose some event properties into parameters
+            listenerFunc(event, event.type, event.target);  
+        };
+        return elementObj.addEventListener( eventName, intermediateListener, false );        
+    }    
+```
+
+```C#
+public partial class EventsProxy {
+
+    [JSImport("globalThis.subscribeEventWithParameters")]
+    public static partial string SusbcribeEventWithParameters(JSObject elementObj, string eventName,
+        [JSMarshalAs<JSType.Function<JSType.Object, JSType.String, JSType.Object>>] 
+                            Action<       JSObject,        string,      JSObject> listener);
+
+}
+```
+Note the `[JSMarshalAs<...>]` attribute and `Action<...>` generic parameters applied to the `listener` parameter.  Superfluous spacing has been added above to emphasize the type mapping of the Function to the Action, JSType.Object to JSObject, and JSType.String to string.  These three types correspond to the types passed when the event is fired from the JS shim: `listenerFunc(event, event.type, event.target);` and also correspond to the C# event handler below demonstrating usage of this event:
+
+```C#
+Action<JSObject, string, JSObject> listenerWithParameters = (JSObject eventObj, string eventType, JSObject current) =>
+{
+    Console.WriteLine($"[Event Destructured Parameters] eventType:{eventType}");    
+    JSObjectExample.Log(eventObj, eventType, current);
+};
+EventsProxy.SusbcribeEventWithParameters(element, "click", listenerWithParameters);
+```
+
+Logging the received parameters to the browser console shows a reference to the event object, the string "click" for the event name, and the HTMLElement object that was clicked on (`event.target`):
+
+![image](https://github.com/SerratedSharp/CSharpWasmRecipes/assets/97156524/c011ded5-74bb-43d6-aa56-4c51fbd55c5b)
+
 ### Wrapping a JS Event as a C# Event
 
+JS events can be exposed as classic C# events to present them using C# semantics.  
+
+TODO: Example
+
+SerratedJQ demonstrates this approach with `JQueryPlainObject.OnClick` and `.On(eventName, ...)`.  This implementation includes advanced approaches to handling of the event object and ability to subscribe to any event by name:: https://github.com/SerratedSharp/SerratedJQ/blob/d2406a1b94334f6fc3ceba422e74f25d289004bb/SerratedJQLibrary/SerratedJQ/Plain/JQueryPlainObject.cs#L263
 
 ### Triggering JS Events from C#
 
+Declare JS shim:
+```JS
+WebAssemblyRuntime.InvokeJS("""
+    globalThis.click = function(elementObj) { return elementObj.click(); }
+    """);
+```
 
+```C#
+public partial class EventsProxy {
+    [JSImport("globalThis.click")]
+    public static partial string Click(JSObject elementObj);
+}
 
+//Usage:
+EventsProxy.Click(element); // Trigger the click event
+```
+
+### Passing Arrays to Event Handlers
 
 TODO: Demonstrate limitation and workaround for passing arrays through events.
+
+See workaround of passing a JSObject, then decomposing the object into an array in a separate call: https://github.com/SerratedSharp/SerratedJQ/blob/d2406a1b94334f6fc3ceba422e74f25d289004bb/SerratedJQLibrary/JSInteropHelpers/EmbeddedFiles/JQueryProxy.js#L67
 
 ## JS Declarations
 
