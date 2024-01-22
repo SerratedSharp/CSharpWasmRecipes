@@ -137,7 +137,9 @@ public partial class JSObjectExample
 }
 
 //Usage:
-JSObject jsObj = JSObjectExample.GetJsonAsJSObject("""{"firstName":"Crow","middleName":"T","lastName":"Robot"}""");
+JSObject jsObj = JSObjectExample.GetJsonAsJSObject("""
+    {"firstName":"Crow","middleName":"T","lastName":"Robot"}
+    """);
 JSObjectExample.ConsoleLogJSObject(jsObj);
 ```
 
@@ -623,9 +625,7 @@ SerratedJQ demonstrates this approach with `JQueryPlainObject.OnClick` and `.On(
 
 Declare JS shim:
 ```JS
-WebAssemblyRuntime.InvokeJS("""
-    globalThis.click = function(elementObj) { return elementObj.click(); }
-    """);
+globalThis.click = function(elementObj) { return elementObj.click(); }    
 ```
 
 ```C#
