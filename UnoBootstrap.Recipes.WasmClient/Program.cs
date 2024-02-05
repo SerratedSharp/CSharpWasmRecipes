@@ -1,10 +1,14 @@
-﻿using System;
+﻿using SerratedSharp.SerratedJQ.Plain;
+using System;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices.JavaScript;
 using System.Threading;
 using System.Threading.Tasks;
 using Uno.Foundation;
 using UnoBootstrap.Recipes.WasmClient.Basic;
+using static UnoBootstrap.Recipes.WasmClient.HtmlElementWrapper;
+
 
 // Alias our JS console wrapper to avoid conflicts with System.Console
 using JSConsole = UnoBootstrap.Recipes.WasmClient.JSWrappers.Console;
@@ -19,6 +23,10 @@ namespace UnoBootstrap.Recipes.WasmClient
             // NOTE: Because this code is running in the browser, Console.WriteLine() appears in the browser's debug console.
             Console.WriteLine("Hello, World!");
 
+            //SerratedSharp.SerratedJQ.JSDeclarations.LoadScripts();
+            //await SerratedSharp.JSInteropHelpers.HelpersJS.LoadJQuery("https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js");
+            //await JQueryPlain.Ready(); // Wait for document Ready
+
             // We can await values returned from JS promises:
             string resolvedValue = await Basic.PromisesWUno.AwaitFunctionReturningPromisedString();
             Console.WriteLine(resolvedValue);
@@ -28,10 +36,10 @@ namespace UnoBootstrap.Recipes.WasmClient
 
             Basic.PromisesWNet7.DeclareJSFunctionReturningPromisedString();
             var fetchBody = await Basic.PromisesWNet7.FunctionReturningPromisedString("https://cat-fact.herokuapp.com/facts/");
-            Console.WriteLine("fetchBody: " + fetchBody.Substring(0,100) + "...");
+            Console.WriteLine("fetchBody: " + fetchBody.Substring(0, 100) + "...");
 
             // Note: Our javascript Console wrapper is aliased at the top using as JSConsole to avoid conflict with System.Console.
-            JSConsole.Log("LoggedViaWrapper", DateTime.Now);    
+            JSConsole.Log("LoggedViaWrapper", DateTime.Now);
 
             // Call console.log a different way using JSImport
             Basic.JSImportExample.GlobalThisConsoleLog("Hello from JSImported console.log!");
@@ -44,12 +52,31 @@ namespace UnoBootstrap.Recipes.WasmClient
             WebAssemblyRuntime.InvokeJS("""
                 globalThis.findElement = function(id) { return document.getElementById(id); }
                 globalThis.getClass = function(elementObj) { return elementObj.getAttribute('class'); }
-                globalThis.subscribeEvent = function(elementObj, eventName, listenerFunc) { 
-                    return elementObj.addEventListener( eventName, listenerFunc, false ); 
+                globalThis.click = function(elementObj) { return elementObj.click(); }
+                globalThis.subscribeEvent = function(elementObj, eventName, listenerFunc) 
+                { 
+                    //elementObj.addEventListener( eventName, listenerFunc, false ); 
+                    //return listenerFunc;// Error: JSObject proxy of ManagedObject proxy is not supported. 
+
+                    // Need to wrap the Managed C# action in JS func
+                    let handler = function (e) {
+                        listenerFunc(e);
+                    }.bind(elementObj);
+
+                    elementObj.addEventListener( eventName, handler, false ); 
+                    return handler;// return JSObject reference so it can be used for removeEventListener later
+                }
+                globalThis.unsubscribeEvent = function(elementObj, eventName, listenerFunc) { 
+                    return elementObj.removeEventListener( eventName, listenerFunc, false ); 
                 } 
-                globalThis.subscribeEventWithParameters = function(elementObj, eventName, listenerFunc) { 
-                    return elementObj.addEventListener( eventName, listenerFunc, false ); 
-                } 
+                globalThis.subscribeEventWithParameters = function(elementObj, eventName, listenerFunc) 
+                { 
+                    let intermediateListener = function(event) { 
+                        console.log("tst",event);
+                        listenerFunc(event, event.type, event.target);  // decompose some event properties into parameters
+                    };
+                    return elementObj.addEventListener( eventName, intermediateListener, false );
+                }                
                 """);
 
             // Note findElement returns an object, and getClass takes an object as a parameter.
@@ -62,26 +89,50 @@ namespace UnoBootstrap.Recipes.WasmClient
             var elementClasses = Basic.JSObjectExample.GetClass(element);
             Console.WriteLine("Class string: " + elementClasses);
 
-            // Using a lambda expression as a listener
-            EventsProxy.SusbcribeEvent(element, "click", (JSObject eventObj) => {
-                Console.WriteLine($"[Inline handler] Event fired with event type via interop property '{eventObj.GetPropertyAsString("type")}'");
-                JSObjectExample.Log(eventObj);
-            });
+            //DemoBasicEvents(element);
 
-            // Using local Action variable as listener
-            Action<JSObject> listener = (JSObject eventObj) =>
+            JSObjectWrapperEventHandler<HtmlElementWrapper, JSObject> test = (HtmlElementWrapper sender, JSObject e) =>
             {
-                Console.WriteLine($"[Local variable handler] Event fired with event type via interop property '{eventObj.GetPropertyAsString("type")}'");
-                JSObjectExample.Log(eventObj);
+                Console.WriteLine($"[Strongly Typed Event Handler] Event fired through C# event' {e.GetPropertyAsString("type")}'");
+                // Log sender and event object
+                JSObjectExample.Log(sender.JSObject, e);
             };
-            EventsProxy.SusbcribeEvent(element, "click", listener); 
-            
-            EventsProxy.SusbcribeEvent(element, "click", ClickListener); // Using static function as listener
-            
-            var instance = new SomeClass();
-            EventsProxy.SusbcribeEvent(element, "click", instance.InstanceClickListener); // Using instance method as listener
+
+            //Action<JSObject> test2 = (JSObject e) =>
+            //{
+            //    Console.WriteLine($"[Strongly Typed Event Handler] Event fired through C# event' {e.GetPropertyAsString("type")}'");
+            //    // Log sender and event object
+            //    JSObjectExample.Log(e);
+            //};
+
+            HtmlElementWrapper htmlElementWrapper = new HtmlElementWrapper(element);
+            //htmlElementWrapper.OnClick += HtmlElementWrapper_OnClick;
+            //htmlElementWrapper.OnClick -= HtmlElementWrapper_OnClick;
+            //htmlElementWrapper.OnClick += test;
+            Console.WriteLine("+= test");
+            htmlElementWrapper.OnClick += test;
+            EventsProxy.Click(element);// trigger event to test hander
+            Console.WriteLine("-= test");
+            htmlElementWrapper.OnClick -= test;
+            EventsProxy.Click(element);// trigger event again to verify event no longer fired
+            Console.WriteLine("+= test");
+            htmlElementWrapper.OnClick += test;
+            EventsProxy.Click(element);
 
 
+
+            //EventsProxy.SubscribeEvent(blahBtn, "click", Test);
+            //EventsProxy.UnsubscribeEvent(blahBtn, "click", Test);
+            //EventsProxy.SubscribeEvent(blahBtn, "click", Test);
+            //EventsProxy.UnsubscribeEvent(blahBtn, "click", Test);
+            //EventsProxy.SubscribeEvent(blahBtn, "click", Test);
+            //EventsProxy.UnsubscribeEvent(blahBtn, "click", Test);
+
+            //EventsProxy.SubscribeEvent(element, "click", htmlElementWrapper.JSInteropEventListener);
+            //EventsProxy.UnsubscribeEvent(element, "click", htmlElementWrapper.JSInteropEventListener);
+            //EventsProxy.SubscribeEvent(element, "click", htmlElementWrapper.JSInteropEventListener);
+
+            //EventsProxy.Click(element); // Trigger the click event to test event listeners
 
             // Using WebAssemblyRuntime based instance wrapper 
             Advanced.ElementWrapper elementWrapper = Advanced.ElementWrapper.GetElementById("uno-body");
@@ -103,7 +154,7 @@ namespace UnoBootstrap.Recipes.WasmClient
                 """);
 
             // Store a reference in JS globalThis to dmeonstrate by ref modification
-            JSHost.GlobalThis.SetProperty("jsObj", jsObj); 
+            JSHost.GlobalThis.SetProperty("jsObj", jsObj);
 
             JSObjectExample.ConsoleLogJSObject(jsObj);
             string lastName = jsObj.GetPropertyAsString("lastName");
@@ -112,7 +163,7 @@ namespace UnoBootstrap.Recipes.WasmClient
             Console.WriteLine("lastName Type: " + jsObj.GetTypeOfProperty("lastName"));
 
             Console.WriteLine("innerObj Type: " + jsObj.GetTypeOfProperty("innerObj"));
-            JSObject innerObj = jsObj.GetPropertyAsJSObject("innerObj");            
+            JSObject innerObj = jsObj.GetPropertyAsJSObject("innerObj");
             string innerProp1 = innerObj.GetPropertyAsString("prop1");
             Console.WriteLine("innerProp1: " + innerProp1);
 
@@ -127,6 +178,55 @@ namespace UnoBootstrap.Recipes.WasmClient
             JSObjectExample.Log("originalObj: ", originalObj);
 
         }
+
+        private static void Btn_OnClick(JQueryPlainObject sender, dynamic e)
+        {
+            Console.WriteLine("Using JQuery event");
+        }
+
+        public static void Test(JSObject element)
+        {
+            Console.WriteLine("Test");
+        }
+
+        private static void DemoBasicEvents(JSObject element)
+        {
+
+            // Using a lambda expression as a listener
+            EventsProxy.SubscribeEvent(element, "click", (JSObject eventObj) =>
+            {
+                Console.WriteLine($"[Inline handler] Event fired with event type via interop property '{eventObj.GetPropertyAsString("type")}'");
+                JSObjectExample.Log(eventObj);
+            });
+
+            // Using local Action variable as listener
+            Action<JSObject> listener = (JSObject eventObj) =>
+            {
+                Console.WriteLine($"[Local variable handler] Event fired with event type via interop property '{eventObj.GetPropertyAsString("type")}'");
+                JSObjectExample.Log(eventObj);
+            };
+            EventsProxy.SubscribeEvent(element, "click", listener);
+
+            EventsProxy.SubscribeEvent(element, "click", ClickListener); // Using static function as listener
+
+            var instance = new SomeClass();
+            EventsProxy.SubscribeEvent(element, "click", instance.InstanceClickListener); // Using instance method as listener
+
+            // use local action variable as listener for subscribeEventWithParameters
+            Action<JSObject, string, JSObject> listenerWithParameters = (JSObject eventObj, string eventType, JSObject current) =>
+            {
+                Console.WriteLine($"[Event Destructured Parameters] eventType:{eventType}");
+                JSObjectExample.Log(eventObj, eventType, current);// will show that `current` is a HTMLElement reference
+            };
+            EventsProxy.SusbcribeEventWithParameters(element, "click", listenerWithParameters);
+        }
+
+        //private static void HtmlElementWrapper_OnClick(HtmlElementWrapper sender, JSObject e)
+        //{
+        //    Console.WriteLine($"[Strongly Typed Event Handler] Event fired through C# event' {e.GetPropertyAsString("type")}'");
+        //    // Log sender and event object
+        //    JSObjectExample.Log(sender.JSObject, e);
+        //}
 
         // SubscribeEvent click listener function
         private static void ClickListener(JSObject eventObj)
@@ -143,6 +243,57 @@ namespace UnoBootstrap.Recipes.WasmClient
         {
             Console.WriteLine($"[ClickListener handler] Event fired with event type via interop property '{eventObj.GetPropertyAsString("type")}'");
             JSObjectExample.Log(eventObj);
+        }
+    }
+
+    public interface IJSObjectWrapper { JSObject JSObject { get; } }
+    public class HtmlElementWrapper(JSObject jsObject) : IJSObjectWrapper
+    {
+        public JSObject JSObject { get; } = jsObject;
+        
+        // SubscribeEvent click listener function
+        public void InstanceClickListener(JSObject eventObj)
+        {
+            Console.WriteLine($"[ClickListener handler] Event fired with event type via interop property '{eventObj.GetPropertyAsString("type")}'");
+            JSObjectExample.Log(eventObj);
+        }
+
+        public delegate void JSObjectWrapperEventHandler<in TSender, in TEventArgs>(TSender sender, TEventArgs e)
+            where TSender : IJSObjectWrapper;
+        private JSObjectWrapperEventHandler<HtmlElementWrapper, JSObject> onClick;
+        const string EventName = "click";
+        private JSObject JSListener { get; set; }
+        public event JSObjectWrapperEventHandler<HtmlElementWrapper, JSObject> OnClick
+        {
+            add
+            {
+                // We have only one JS listener, and can proxy firings to all C# subscribers
+                if (onClick == null) // if first subscriber, then add JS listener
+                { 
+                    JSListener = EventsProxy.SubscribeEvent(this.JSObject, EventName, JSInteropEventListener);
+                }
+                // Always add the C# subscriber to our event collection
+                onClick += value;
+            }
+            remove
+            {
+                if (onClick == null)// if no subscribers on this instance/event
+                {
+                    return;// nothing to remove
+                }
+
+                onClick -= value; // else remove susbcriber
+                
+                if (onClick == null) // if last subscriber removed, then remove JS listener
+                {
+                    EventsProxy.UnsubscribeEvent(this.JSObject, EventName, JSListener);
+                }
+            }
+        }
+        // When the JS event is fired, this listener is called, and fires the C# event
+        public void JSInteropEventListener(JSObject eventObj)
+        {
+            onClick?.Invoke(this, eventObj);// fire event on all subscribers
         }
     }
 

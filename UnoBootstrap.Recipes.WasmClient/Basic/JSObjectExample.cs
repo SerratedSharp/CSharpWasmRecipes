@@ -40,14 +40,18 @@ namespace UnoBootstrap.Recipes.WasmClient.Basic
     {
 
         [JSImport("globalThis.subscribeEvent")]
-        public static partial string SusbcribeEvent(JSObject elementObj, string eventName,
+        public static partial JSObject SubscribeEvent(JSObject elementObj, string eventName,
             [JSMarshalAs<JSType.Function<JSType.Object>>] Action<JSObject> listener);
 
-        [JSImport("globalThis.subscribeEvent")]
-        public static partial string SusbcribeEventWithParameters(JSObject elementObj, string eventName,
-            [JSMarshalAs<JSType.Function<JSType.Object, JSType.String>>] Action<JSObject, string> listener);
+        [JSImport("globalThis.subscribeEventWithParameters")]
+        public static partial void SusbcribeEventWithParameters(JSObject elementObj, string eventName,
+            [JSMarshalAs<JSType.Function<JSType.Object, JSType.String, JSType.Object>>] Action<JSObject, string, JSObject> listener);
 
+        [JSImport("globalThis.click")]
+        public static partial void Click(JSObject elementObj);
 
+        [JSImport("globalThis.unsubscribeEvent")]
+        public static partial void UnsubscribeEvent(JSObject jSObject, string eventName, JSObject listener);
     }
 
 
