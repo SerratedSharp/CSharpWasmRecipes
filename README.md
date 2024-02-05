@@ -51,13 +51,13 @@ It is helpful to be familiar with the ecosystem of different libraries and frame
 Additional Packages:
 - **Uno.Bootstrap.Wasm**: Tooling for compiling and packaging our .NET assembly as a WebAssembly/WASM package, along with all the javascript necessary for loading(i.e. **bootstrap**ping) the WASM into the browser.  This is only intended for use in the root project which will be the entry point for the WebAssembly.  Other class libraries/projects referenced do not need to reference this package.   (Note, no relation to the Bootstrap CSS/JS frontend framework.)  The name "Bootstrap" refers to similar terminology used for loading operating systems, as it "pulls itself up by its bootstraps".
 - **Uno.Wasm.Bootstrap.DevServer**: Provides a self-hosted HTTP server for serving static WASM files locally and supporting debugging browser link to enable breakpoints and stepping through C# code in the IDE while it is running as WASM inside the browser.  This package is useful during local development, but would likely be eliminated when hosted in test/production, where you would likely package the WASM package and related javascript files to be served statically from a traditional web server.  - **Uno.UI.WebAssembly**: At one time this package generated some javascript declarations that WebAssemblyRuntime was dependent on. For example, `WebAssemblyRuntime.InvokeAsync()` would fail at runtime if this package had not been included. At least since 8.* release, this package is no longer required for vanilla WASM projects.
-- **SerratedSharp.JSInteropHelpers**: An optional library of helper methods for implementing interop. Reduces the amount of boilerplate code needed to call JS methods (both static and instance) from C#.  This library is less refined as it is primarily used internally to support my own JS interop implementations, but it has been key in allowing me to implement large surface areas of JS library APIs quickly.  I hope to refine this library for other JS interop/wrapper implementers to use in the future.  Usage examples can be found within SerratedJQ implementation: [JQueryPlainObject.cs](https://github.com/SerratedSharp/SerratedJQ/blob/main/SerratedJQLibrary/SerratedJQ/Plain/JQueryPlainObject.cs)
+- **SerratedSharp.JSInteropHelpers**: An optional library of helper methods for implementing interop useful for wrapping JS libraries/types. Reduces the amount of boilerplate code needed to call JS. This library is less refined I created it to support my own JS interop implementations, but it has been key in allowing me to implement large surface areas of JS library APIs quickly.  See [Proxyless Instance Wrapper](#Proxyless-Instance-Wrapper) and additional examples in SerratedJQ implementation: [JQueryPlainObject.cs](https://github.com/SerratedSharp/SerratedJQ/blob/main/SerratedJQLibrary/SerratedJQ/Plain/JQueryPlainObject.cs)
 - **SerratedSharp.SerratedJQ**: An optional .NET wrapper for jQuery to enable expressive access and event handling of the HTML DOM from WebAssembly.  Many of the examples below use native DOM APIs to demonstrate the fundamentals of JS interop.  However, if your goal is DOM access/manipulation/event-handling, then much of the JS shims and C# proxies can be omitted by using [SerratedJQ](https://github.com/SerratedSharp/SerratedJQ) instead.
 
 > [!IMPORTANT] 
 > Some type names exist in both WebAssemblyRuntime and System.Runtime.InteropService.Javascript, such as JSObject.  Be mindful of what namespaces you have declared in `using`, or fully qualify, to avoid confusing compilation errors.  A project can leverage both capabilities in different places, but should not mix them for a given C#/JS function/type mapping.
 
- The WebAssemblyRuntime package or .NET 7 InteropServices namespace can also be used from class library projects implementing interop wrappers which are intended for consumption in a Uno.Bootstrap.Wasm project.  A class library would typically **not** reference Uno.Bootstrap.Wasm, as that's only needed for the root Console project with a `Main` entry point, and thus would be compiled into a WebAssembly package.
+The WebAssemblyRuntime package or .NET 7 InteropServices namespace can also be used from class library projects implementing interop wrappers which are intended for consumption in a Uno.Bootstrap.Wasm project.  A class library would typically **not** reference Uno.Bootstrap.Wasm, as that's only needed for the root Console project with a `Main` entry point, and thus would be compiled into a WebAssembly package.
 
 ## Architecture and Debugging
 
@@ -644,21 +644,17 @@ To support this implementation we begin with a JS shim for addEventListener and 
 
 ```JS
 globalThis.subscribeEvent = function(elementObj, eventName, listenerFunc) 
-{     
-    elementObj.addEventListener( eventName, listenerFunc, false );
+{    
     let handler = function (e) {
         listenerFunc(e);
     }.bind(elementObj);
+    elementObj.addEventListener( eventName, handler, false );
     return handler; // return boxed JSObject reference for use in removeEventListener
 }
 globalThis.unsubscribeEvent = function(elementObj, eventName, listenerFunc) { 
     return elementObj.removeEventListener( eventName, listenerFunc, false ); 
 }
 ```
-
-We've adjusted subscribeEvent from prior examples slightly to return a JSObject reference for the listenerFunc action, as it must be an identical JS reference whenever calling removeEventListener.  Whenever a C# Action is passed to two different JS methods, then a new reference is generated each time, thus the second call to removeEventListener would fail to find the listener to remove since the reference passed in the second call would not match the first.  
-
-To address this problem we return the JSObject reference generated in the first call, so the reference can be used in the second call.  This is reflected in the method signatures below, where the listener is passed as an Action in the first call, but then passed as a JSObject in the second:
 
 ```C#
 public partial class EventsProxy
@@ -672,7 +668,9 @@ public partial class EventsProxy
 }
 ```
 
-We'll use a wrapper for HtmlElement to demonstrate the implementation of the click event.  To minimize the amount of interop occurring for this event, we support multiple C# subscribers through a single JS interop event subscription. 
+Note, the difference in the UnsubscribeEvent's third parameter that takes the JSObject reference returned from the other method, rather than an Action. 
+
+We'll use a wrapper for HtmlElement to demonstrate the implementation of the click event. To minimize the amount of interop occurring for this event, we support multiple C# subscribers through a single JS interop event subscription. 
 
 ```C#
 public interface IJSObjectWrapper { JSObject JSObject { get; } }
@@ -751,6 +749,8 @@ EventsProxy.Click(element); // Trigger the click event
 ### Passing Arrays to Event Handlers
 
 TODO: Demonstrate limitation and workaround for passing arrays through events.
+
+Actions passed as parameters to JS methods cannot have an array parameter.  Instead we pass a JSObject reference to a type holding the array and then use a seperate interop call to retrieve an array. 
 
 See workaround of passing a JSObject, then decomposing the object into an array in a separate call: https://github.com/SerratedSharp/SerratedJQ/blob/d2406a1b94334f6fc3ceba422e74f25d289004bb/SerratedJQLibrary/JSInteropHelpers/EmbeddedFiles/JQueryProxy.js#L67
 
