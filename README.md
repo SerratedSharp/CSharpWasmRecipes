@@ -84,7 +84,7 @@ JSGlobal.GlobalThisConsoleLog("Hello World");
 ```
 
 Declaring our own static JS method:
-```js
+```JS
 globalThis.alertProxy = function (text) {
 	alert(text);
 }
@@ -233,7 +233,7 @@ Note: VS2022 can often automatically add Uno.Foundation.Interop using the incorr
 Let's look at developing an interface for interacting with JS types from C#.  We'll use vanilla HTML elements and HTML DOM methods as our example, but this same approach can be applied to custom JS types.  This demonstrates one opinionated approach to mapping JS instance methods, but demonstrates the fundamentals that would be used in some form by most approaches.
 
 Declaring static javascript methods:
-```js
+```JS
 // findElement takes a string and returns an object (an HTML element reference)
 // getClass takes an object, calls an instance method on that object, and returns a string
 globalThis.findElement = function(id) { return document.getElementById(id); }
@@ -517,7 +517,7 @@ EventsProxy.UnsubscribeEvent(element, "click", jsListener); // Unsubscribe the e
 Our C# event handler will be triggered each time the button element is clicked.
 
 We pass our event handler to the JSImport'd method's third parameter:
-```
+```C#
 [JSMarshalAs<JSType.Function<JSType.Object>>] Action<JSObject> listener
 ```
 
@@ -588,13 +588,13 @@ internal class Program
 To avoid additional interop roundtrips, we can decompose the event object into seperate parameters.  In this example we retrieve the name of the event fired(`event.type`) and the element clicked(`event.target`) to be passed as additional parameters.
 
 ```JS
-    globalThis.subscribeEventWithParameters = function(elementObj, eventName, listenerFunc) { 
-        let intermediateListener = function(event) { 
-            // decompose some event properties into parameters
-            listenerFunc(event, event.type, event.target);  
-        };
-        return elementObj.addEventListener( eventName, intermediateListener, false );        
-    }    
+globalThis.subscribeEventWithParameters = function(elementObj, eventName, listenerFunc) { 
+    let intermediateListener = function(event) { 
+        // decompose some event properties into parameters
+        listenerFunc(event, event.type, event.target);  
+    };
+    return elementObj.addEventListener( eventName, intermediateListener, false );        
+}    
 ```
 
 ```C#
