@@ -116,7 +116,7 @@ WebAssemblyRuntime.InvokeJS(YourAssemblyWasmClient.EmbeddedFiles.JSShimsFile);
 ```
 
 Additional methods of including JS per Uno Bootstrap documentation:
-[Loading via Uno.Bootstrap and RequireJS] (https://platform.uno/docs/articles/external/uno.wasm.bootstrap/doc/features-dependency-management.html)
+[Loading via Uno.Bootstrap and RequireJS](https://platform.uno/docs/articles/external/uno.wasm.bootstrap/doc/features-dependency-management.html)
 [Embedding Existing JavaScript Components Into Uno-WASM](https://platform.uno/docs/articles/interop/wasm-javascript-1.html#embedding-assets)
 
 ### JS Object References
@@ -218,7 +218,7 @@ JSObject originalObj = JSHost.GlobalThis.GetPropertyAsJSObject("jsObj");
 JSObjectExample.Log("originalObj: ", originalObj);
 ```
 
-Comparing the reference we modified throughout the code with the original reference we stored and retrieved from JS globalThis, we see the new and modified properties are reflected in the original JS object we stored in globalThis:
+Comparing the output of the two `JSObjectExample.Log()` statements, we can see the reference we modified throughout the code matches the original reference we stored and retrieved from JS globalThis:
 
 ![image](https://github.com/SerratedSharp/CSharpWasmRecipes/assets/97156524/5554e8a5-0a36-47d8-8a15-3a85b4bebff2)
 
@@ -309,7 +309,7 @@ Let's review the above starting with the deepest JS layer and working up to C#:
 
 Using this approach, the HtmlElementProxy would be an internal/private implementation with HtmlDomJS and HtmlElementObject exposing the functionality publicly.  The \*JS suffix is used on the static class to indicate it wraps JS declarations, and calls to it result in JS interop calls.  The \*Object suffix on the container for the JSObject indicates it is a wrapper for a JS type, holds a reference to a JS type, and calls result in interop calls.  The naming convention is arbitrary, but is akin to suffixing classes where they represent proxies to other systems and hold unmanaged resources or calls that pass beyond the .NET runtime.
 
-The JS and proxy layers for instance methods can be eliminated and handled generically with SerratedSharp.JSInteropHelpers. See [Generic Instance Proxy](#Generic-Instance-Proxy)
+The JS and proxy layers for instance methods can be eliminated and handled generically with SerratedSharp.JSInteropHelpers. See [Proxyless Instance Wrapper](#Proxyless-Instance-Wrapper)
 
 #### Memory Management of JSObject References
 
