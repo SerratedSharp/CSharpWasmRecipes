@@ -395,6 +395,7 @@ Approaches to exposing a JS promise, async method, or old style callback as an a
 
 ### C# Awaiting a JS Promise
 
+JS Shim:
 ```JS
 globalThis.functionReturningPromisedString = function (url) {   
     return fetch(url, {method: 'GET'})  // request URL
@@ -403,6 +404,7 @@ globalThis.functionReturningPromisedString = function (url) {
 }   
 ```
 
+C# Proxy:
 ```C#
 internal static partial class RequestsProxy
 {
@@ -412,8 +414,10 @@ internal static partial class RequestsProxy
     public static partial Task<string> // the return type Task<string> corresponds to the marshaled Promise<string>
         FunctionReturningPromisedString(string url);
 }
+```
 
-// Usage:
+Usage:
+```C#
 string response = await RequestsProxy.FunctionReturningPromisedString("https://www.example.com");
 ```
 
