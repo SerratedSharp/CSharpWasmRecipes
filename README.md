@@ -17,7 +17,7 @@ The majority of examples from this article are implemented in the WasmBrowesr.Re
 
 # C# WASM Overview
 
-When a .NET project is compiled to WebAssembly(WASM), the resulting package can be run in a browser that supports the WebAssembly runtime standard.  Unlike legacy proprietary technologies such as Silverlight which failed to achieve ubiquitous browser support, WebAssembly has been adopted as a web standard and is supported by all major browsers: ([Supported Browsers](https://developer.mozilla.org/en-US/docs/WebAssembly#browser_compatibility).
+When a .NET project is compiled to WebAssembly(WASM), the resulting package can be run in a browser that supports the WebAssembly runtime standard.  Unlike legacy proprietary technologies such as Silverlight which failed to achieve ubiquitous browser support, WebAssembly has been adopted as a web standard and is supported by all major browsers: [Supported Browsers](https://developer.mozilla.org/en-US/docs/WebAssembly#browser_compatibility).
 
 Compiling C#/.NET to the WebAssembly format enables several capabilities and benefits:
 
