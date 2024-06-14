@@ -11,6 +11,10 @@ This allows a C# WASM module to provide client-side capabilities in the context 
 
 (Portions of this article were adapted and submitted for inclusion in the ASP.NET Core reference documentation.  I am the original author of the following content, and is provided here to provide additional context, examples, and guidance.)
 
+## Examples Project
+
+The majority of examples from this article are implemented in the WasmBrowesr.Recipes.WasmClient project: [C# Code](https://github.com/SerratedSharp/CSharpWasmRecipes/tree/main/WasmBrowser.Recipes.WasmClient/Examples) and [JavaScript Code](https://github.com/SerratedSharp/CSharpWasmRecipes/tree/main/WasmBrowser.Recipes.WasmClient/wwwroot).
+
 # C# WASM Overview
 
 When a .NET project is compiled to WebAssembly(WASM), the resulting package can be run in a browser that supports the WebAssembly runtime standard.  Unlike legacy proprietary technologies such as Silverlight which failed to achieve ubiquitous browser support, WebAssembly has been adopted as a web standard and is supported by all major browsers: ([Supported Browsers](https://developer.mozilla.org/en-US/docs/WebAssembly#browser_compatibility).
