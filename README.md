@@ -5,9 +5,9 @@ To improve readability, navigate [here](README.md) then collapse the files drawe
 ![image](https://github.com/SerratedSharp/CSharpWasmRecipes/assets/97156524/b850c806-7631-40b2-ac8d-e7cb4a10b386)
 
 # C# WASM Recipes
-Code snippets and guidance for C# WASM, primarily focused on platform agnostic approaches that do not necessarily require the Blazor nor Uno Platform UI frameworks.  Optionally Uno.Wasm.Bootstrap can be used independently of the Uno Platform UI framework to provide compilation to a WASM compatible format, or alternatively the .NET 8 wasm-experimental workload providing the WebAssembly Browser App project template can be used. Otherwise code and techniques focus on those that rely on .NET 7 JS interop capabilities, thus would work with or without either framework.
+Code snippets and guidance for C# WebAssembly(WASM), primarily focused on platform agnostic approaches that do not necessarily require the Blazor nor Uno Platform UI frameworks.  Optionally Uno.Wasm.Bootstrap can be used independently of the Uno Platform UI framework to provide compilation to a WASM compatible format, or alternatively the .NET 8 wasm-experimental workload providing the WebAssembly Browser App project template can be used. Otherwise code and techniques focus on those that rely on .NET 7 JS interop capabilities, thus would work with or without either framework.
 
-This allows a C# WASM module to provide client side capabitilies in the context of virtually any web application, regardless of server side hosting technologies or client side frameworks, so long that it runs in a modern standards compliant browser.
+This allows a C# WASM module to provide client-side capabilities in the context of virtually any web application, regardless of server side hosting technologies or client-side frameworks, so long that it runs in a modern standards compliant browser.
 
 (Portions of this article were adapted and submitted for inclusion in the ASP.NET Core reference documentation.  I am the original author of the following content, and is provided here to provide additional context, examples, and guidance.)
 
@@ -18,16 +18,16 @@ When a .NET project is compiled to WebAssembly(WASM), the resulting package can 
 Compiling C#/.NET to the WebAssembly format enables several capabilities and benefits:
 
 - Run C#/.NET in the browser client-side using a secure sandbox.
-- Allows client side or UI logic to be implemented in C# in lieu of Javascript.
-- Ability to leverage the ecosystem of .NET frameworks and libraries to implement client side logic.
+- Allows client-side or UI logic to be implemented in C# in lieu of Javascript.
+- Ability to leverage the ecosystem of .NET frameworks and libraries to implement client-side logic.
 - Implement reusable logic in C# which can be leveraged by existing Javascript implementations.
 - Improve developer productivity by reducing the impact of context switching between C# and Javascript.
 - Reduce duplication of logic such as API models and validation logic which would previously have been implemented both server-side and client-side in C# and Javascript respectively.
 - Run intensive client-side code with close to native performance in a precompiled AoT (ahead-of-time) format.
-- Reduce server load where processing such as HTML templating can be offloaded client side.
+- Reduce server load where processing such as HTML templating can be offloaded client-side.
 - Expands the ecosystem of code/logic sharing across platforms and programming languages.
 
-Note that a C# WASM package can be used client side with any server side technology, and is not limited to ASP.NET.  The compiled WASM package is served and downloaded to the browser as static files, and then executed client side.  For example, a github.io page which only supports static content can serve a C# WASM package.
+Note that a C# WASM package can be used client-side with any server side technology, and is not limited to ASP.NET.  The compiled WASM package is served and downloaded to the browser as static files, and then executed client-side.  For example, a github.io page which only supports static content can serve a C# WASM package.
 
 In the case of WASI, where WebAssembly can be executed in other contexts besides the browser, much of the above applies and additionally:
 
@@ -49,7 +49,7 @@ It is helpful to be familiar with the ecosystem of different libraries and frame
 To compile a .NET project to a WebAssembly module, one of the following project types can be used.  In addition to compiling your .NET code to the WebAssembly format to be executed by the browser, they both include the JavaScript and .NET runtimes needed to load or "bootstrap" your WebAssembly module.  While the browser provides WASM execution support, some orchestration is needed from JS scripts to download related modules and other assets needed to initialize and load the WASM hosted .NET runtime and your WebAssmebly module.  Both of the following project types produce a package of files upon project Publish which include all of the necessary web assets and JavaScript to handle the runtime initialization process.
 
 - **wasm-experimental/WASM Browser**: The .NET 8 wasm-experimental workload provides the WebAssembly Browser App project template.  We'll refer to this as WASM Browser.  When compiled it produces a WASM package, is structured as a console app with a Main method that is called when loaded in browser, and the project by default will launch a self hosted web server for development/debugging locally.  The resulting package can be published to a folder, and the containing assets deployed to any web server that can serve static files.  Installation instructions: [Run .NET from JavaScript - Prerequisites](https://learn.microsoft.com/en-us/aspnet/core/client-side/dotnet-interop?view=aspnetcore-8.0#prerequisites).
-- **Uno.Bootstrap.Wasm**: Tooling for compiling and packaging a .NET assembly as a WebAssembly/WASM package, along with all the javascript necessary for loading(i.e. **bootstrap**ping) the WASM into the browser.  This is only intended for use in the root project which will be the entry point for the WebAssembly.  Other class libraries/projects referenced do not need to reference this package.   (Note, no relation to the Bootstrap CSS/JS frontend framework.)  The name "Bootstrap" refers to similar terminology used for loading operating systems, as it "pulls itself up by its bootstraps".  This project type does not include the Uno UI Platform, but rather produces a simple module for executing .NET code.
+- **Uno.Bootstrap.Wasm**: Tooling for compiling and packaging a .NET assembly as a WebAssembly/WASM package, along with all the JavaScript necessary for loading(i.e. **bootstrap**ping) the WASM into the browser.  This is only intended for use in the root project which will be the entry point for the WebAssembly.  Other class libraries/projects referenced do not need to reference this package.   (Note, no relation to the Bootstrap CSS/JS frontend framework.)  The name "Bootstrap" refers to similar terminology used for loading operating systems, as it "pulls itself up by its bootstraps".  This project type does not include the Uno UI Platform, but rather produces a simple module for executing .NET code.
 
 Either of the above project types are compatible with JSImport/JSExport and provide similar capabilities to run .NET code and integrate with JS, HTML DOM, or other browser APIs.  Uno Bootstrap has been at a stable release for a few years, while WASM Browser as of .NET 8 is fairly new and considered experimental.  I personally prefer WASM Browser as there are fewer integration and configuration pitfalls compared to Uno.Bootstrap.Wasm.
 
@@ -67,10 +67,10 @@ Class libraries which facilitate interop between .NET code and JavaScript.  Typi
 
 ### Additional Packages
 
-- **Uno.Wasm.Bootstrap.DevServer**: If using Uno.Bootstrap.Wasm, this provides a self-hosted HTTP server for serving static WASM files locally and supporting debugging browser link to enable breakpoints and stepping through C# code in the IDE while it is running as WASM inside the browser.  This package is useful during local development, but would likely be eliminated when hosted in test/production, where you would likely package the WASM package and related javascript files to be served statically from a traditional web server.  - **Uno.UI.WebAssembly**: At one time this package generated some javascript declarations that WebAssemblyRuntime was dependent on. For example, `WebAssemblyRuntime.InvokeAsync()` would fail at runtime if this package had not been included. At least since 8.* release, this package is no longer required for vanilla WASM projects.
+- **Uno.Wasm.Bootstrap.DevServer**: If using Uno.Bootstrap.Wasm, this provides a self-hosted HTTP server for serving static WASM files locally and supporting debugging browser link to enable breakpoints and stepping through C# code in the IDE while it is running as WASM inside the browser.  This package is useful during local development, but would likely be eliminated when hosted in test/production, where you would likely package the WASM package and related JavaScript files to be served statically from a traditional web server.  - **Uno.UI.WebAssembly**: At one time this package generated some JavaScript declarations that WebAssemblyRuntime was dependent on. For example, `WebAssemblyRuntime.InvokeAsync()` would fail at runtime if this package had not been included. At least since 8.* release, this package is no longer required for vanilla WASM projects.
 - **WasmAppHost**: WASM Browser project templates use WasmAppHost automatically for self-hosting during development to serve the WebAssembly's as static web assets.  Nothing should be needed aside from setting the WASM Browser project as the startup project to enable this.  [WASM App Host](https://github.com/dotnet/runtime/blob/main/src/mono/wasm/host/README.md)
 **SerratedSharp.JSInteropHelpers**: An optional library of helper methods for implementing interop useful for wrapping JS libraries/types. Reduces the amount of boilerplate code needed to call JS. This library is less refined. I created it to support my own JS interop implementations, but it has been key in allowing me to implement large surface areas of JS library APIs quickly.  See [Proxyless Instance Wrapper](#Proxyless-Instance-Wrapper) and additional examples in SerratedJQ implementation: [JQueryPlainObject.cs](https://github.com/SerratedSharp/SerratedJQ/blob/main/SerratedJQLibrary/SerratedJQ/Plain/JQueryPlainObject.cs)
-- **SerratedSharp.SerratedJQ**: An optional .NET wrapper for jQuery to enable expressive access and event handling of the HTML DOM from WebAssembly.  Many of the examples below use native DOM APIs to demonstrate the fundamentals of JS interop.  However, if your goal is DOM access/manipulation/event-handling, then much of the JS shims and C# proxies can be omitted by using [SerratedJQ](https://github.com/SerratedSharp/SerratedJQ) instead.  Additionally, the monadic nature of JQuery lends itself well to minimizing the number of interop object references or interop calls needed by not requiring collections to be materialized across the interop boundary and allowing bulk operations across multiple elements wuith a single interop call.
+- **SerratedSharp.SerratedJQ**: An optional .NET wrapper for jQuery to enable expressive access and event handling of the HTML DOM from WebAssembly.  Many of the examples below use native DOM APIs to demonstrate the fundamentals of JS interop.  However, if your goal is DOM access/manipulation/event-handling, then much of the JS shims and C# proxies can be omitted by using [SerratedJQ](https://github.com/SerratedSharp/SerratedJQ) instead.  Additionally, the monadic nature of JQuery lends itself well to minimizing the number of interop object references or interop calls needed by not requiring collections to be materialized across the interop boundary and allowing bulk operations across multiple elements with a single interop call.
 
 The WebAssemblyRuntime package or .NET 7 InteropServices namespace can also be used from class library projects implementing interop which is intended for consumption in a Uno.Bootstrap.Wasm or Wasm Browser project.  Typically a Class Library project template would be used, and would **not** reference Uno.Wasm.Bootstrap.  This template would produce a standard .NET assembly, but you would typically set `[assembly: System.Runtime.Versioning.SupportedOSPlatform("browser")]` in its AssemblyInfo.cs to indicate it is only intended for consumption in applications running as WebAssembly in a browser context.  The class library is not compiled directly to WASM, because the consuming root project is responsible for compiling and packaging all referenced assemblies into the final WASM package.  Class libraries can include Javascript files to act as interop shims.  However, the method for including them varies between whether the class library is consumed in a Uno.Bootstrap.Wasm or WASM Browser project.  For Uno.Bootstrap.Wasm, the JS files must be declared as AMD modules, are placed in a WasmScripts project folder, flagged as Build Action: Embedded Resource, and will be loaded automatically by Uno when.  For WASM Browser, the class library project is declared with `<Project Sdk="Microsoft.NET.Sdk.Razor">`, are placed in a wwwroot folder, flagged as Build Action: Content, and can be loaded at runtime using `JSHost.ImportAsync()`.  Additionally, the JSImport declarations must omit the module name for Uno, and include them for WASM Browser.  A class library can provide shims/proxies with each approach, and then conditionally call each based on whether the calling platform is Uno.Bootstrap.Wasm or not.  (TODO: Provide additional details on how this is accomplished in SerratedJQ.)
 
@@ -82,7 +82,7 @@ The [Architecture](Architecture.md) overview covers the structure of a new or ex
 
 The example WasmBrowser.Recipes.WasmClient project supports debugging breakpoints, allowing you to step through C# code running in the context of the WASM module in the browser.  Since the .NET code is actually being executed within the browser, debugging synchronization is supported through WebSocket communication between the browser and Visual Studio per the `inspectUri` setting in launchSettings.js.  In some cases you may observe execution pausing within the browser's debug console first.  In such a case, typically you would not choose the Continue or Resume option from within the browser, but instead wait a few seconds for synchonization, then the breakpoint in Visual Studio should then become highlighted.
 
-For an example of using seperate projects for the client-side WASM module with Uno.Bootstrap.Wasm and a server-side ASP.NET site, with debugging wired up to support breakpoints in the WASM module, see [SerratedJQSample](https://github.com/SerratedSharp/SerratedJQ/tree/main/SerratedJQSample).  This includes project configuration for debugging in VS2022, and debugging setup is included in the SerratedJQ [Quick Start Guide](https://github.com/SerratedSharp/SerratedJQ#quick-start-guide).  SerratedJQ can be omitted, as the debugging setup is the same regardless.  Following the Quick Start guide while omitting SerratedJQ will result in a basic project setup for an ASP.NET MVC web application which includes a WebAssembly package for implementing client side logic.
+For an example of using seperate projects for the client-side WASM module with Uno.Bootstrap.Wasm and a server-side ASP.NET site, with debugging wired up to support breakpoints in the WASM module, see [SerratedJQSample](https://github.com/SerratedSharp/SerratedJQ/tree/main/SerratedJQSample).  This includes project configuration for debugging in VS2022, and debugging setup is included in the SerratedJQ [Quick Start Guide](https://github.com/SerratedSharp/SerratedJQ#quick-start-guide).  SerratedJQ can be omitted, as the debugging setup is the same regardless.  Following the Quick Start guide while omitting SerratedJQ will result in a basic project setup for an ASP.NET MVC web application which includes a WebAssembly package for implementing client-side logic.
 
 See the [Troubleshooting](#Troubleshooting) section for additional guidance.
 
@@ -197,7 +197,7 @@ Most of the marshalled types work in both directions, as parameters and as retur
 
 The following table details supported type mappings:
 
-[.NET 8 JS Interop Type Mapping](https://github.com/dotnet/AspNetCore.Docs/blob/main/aspnetcore/blazor/includes/js-interop/8.0/import-export-interop-mappings.md)]
+[.NET 8 JS Interop Type Mapping](https://github.com/dotnet/AspNetCore.Docs/blob/main/aspnetcore/blazor/includes/js-interop/8.0/import-export-interop-mappings.md)
 
 Note, some combinations of type mappings that require nested generic types in `JSMarshalAs` are not currently supported.  For example, attempting to materialize an array from a JS promise such as `[return: JSMarshalAs<JSType.Promise<JSType.Array<JSType.Number>>>()]` will generate a compile time error.  An appropriate workaround will vary depending on the scenario, but this specific scenario explored in the [Type Mapping Limitations](#type-mapping-limitations)] section.
 
@@ -327,13 +327,36 @@ Demonstrates JSImport of methods which have a JS Date object as its return or pa
 
 Be aware that a [JS Date](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date) is time-zone agnostic.   A .NET DateTime will be adjusted relative to its DateTimeKind when marshalled, but time zone information will not be preserved.  Consider initializing DateTime's with a DateTimeKind.Utc or DateTimeKind.Local consistent with the value it represents, which will avoid incoprrect adjustments that may occur if the default DateTimeKind.Unspecified is used.
 
+```JS
+// DateShim.js
+let DateShim = {};
+(function (DateShim) {
+    
+    DateShim.IncrementDay = function (date) {
+        date.setDate(date.getDate() + 1);
+        return date;
+    };
+    
+    DateShim.LogValueAndType = (value) => {
+        if (value instanceof Date) 
+            console.log("Date:", value)
+        else
+            console.log("Not a Date:", value)
+    };
+
+    DateShim.FromDate = (date) => date;
+        
+})(DateShim);
+
+export { DateShim };
 ```
+
+```C#
 using System;
 using System.Runtime.InteropServices.JavaScript;
 using System.Threading.Tasks;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
-// See wwwroot/DateShim.js for implementation details.
 public partial class DateProxy
 {   
     [JSImport("DateShim.IncrementDay", "DateShim")]
@@ -685,7 +708,7 @@ public static class PromisesUsage
             // Handle a promise rejection
             await PromisesProxy.ConditionalSuccess(shouldSucceed: false);// await an async JS method            
         }
-        catch(JSException ex) // Catch javascript exception
+        catch(JSException ex) // Catch JavaScript exception
         {
             Console.WriteLine($"JavaScript Exception Caught: '{ex.Message}'");
         }       
@@ -848,7 +871,7 @@ public static class EventsUsage
 
 To make calling instance methods on a JS object more natural, a wrapper class can be created to hold a reference to the JSObject and expose instance methods.  The wrapper class holds the JSObject reference internally.
 
-Handling of JSObject's must be done with care, as there is no strong typing to prevent a reference to the wrong underyling type from being used incorrectly.  For this reason, these wrappes encapsulate handling of JSObject's, to guarantee APIs returning JS objects of a certain underlying type are wrapped with the corresponding .NET type.
+Handling of JSObject's must be done with care, as there is no strong typing to prevent a reference to the wrong underlying type from being used incorrectly.  For this reason, these wrappes encapsulate handling of JSObject's, to guarantee APIs returning JS objects of a certain underlying type are wrapped with the corresponding .NET type.
 
 We begin with the usual JS shim and C# proxy.  Note we have two nested namespaces, `Document` and `Element`, for the sake of organizing code relevent to each proxy and object.
 
@@ -939,10 +962,10 @@ public partial class Document
 // Instance wrapper for JS Element
 public partial class Element
 {
-    internal JSObject jsObject;// reference to the javascript interop object
+    internal JSObject jsObject;// reference to the JavaScript interop object
 
     /// <summary>
-    /// Handle to the underlying javascript object.
+    /// Handle to the underlying JavaScript object.
     /// </summary>
     public JSObject JSObject => jsObject;
 

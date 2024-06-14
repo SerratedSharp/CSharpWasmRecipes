@@ -1,0 +1,1 @@
+See the solution [Readme](https://github.com/SerratedSharp/CSharpWasmRecipes/blob/main/README.md) for information about this project.
