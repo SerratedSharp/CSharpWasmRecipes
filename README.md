@@ -725,6 +725,51 @@ public static class PromisesUsage
 }
 ```
 
+### Conditional Promises
+
+Methods that can return promises should consistently return a promise for all code paths.  If you have logic where certain circumstances do not need to execute awaitable code and should return immediately, then just return a resolved promise. This is necessary so that all code paths return some form of a promise for consistent handling by the caller:
+
+```JS
+HelpersProxy.LoadjQuery = function (url) {
+    if (window.jQuery) {
+        // jQuery already loaded and ready to go, nothing to await
+        return Promise.resolve();// return a resolved promise
+    } else {
+        // returns promise that resolves when script is loaded
+        return HelpersProxy.LoadScript(url);
+    }
+};
+```
+
+### Await Loading a Script Tag
+
+While modules are the preferred way to load scripts, sometimes it is necessary to load a traditional script on-demand using a script tag.  The following example demonstrates a JS method that loads a script tag and returns a promise that resolves when the script is loaded.  The C# method can await the promise to ensure the script is loaded before continuing execution.
+
+```JS
+globalThis.LoadScript = function (url) {
+    return new Promise(function (resolve, reject) {
+        var script = document.createElement("script");
+        script.onload = resolve;
+        script.onerror = reject;
+        script.src = url;
+        document.getElementsByTagName("head")[0].appendChild(script);
+    });
+};
+```
+
+```C#
+internal static partial class HelpersProxy
+{
+    private const string baseJSNamespace = "globalThis";
+    [JSImport(baseJSNamespace + ".LoadScript")]s
+    public static partial Task
+        LoadScript(string url);
+}
+
+// Usage:
+await HelpersProxy.LoadScript("https://code.jquery.com/jquery-3.7.1.min.js");
+```
+
 ## Subscribing to JS Events
 
 .NET code can subscribe to and handle JS events by passing a C# Action to a JS method to act as a handler.  The JS shim code handles subscribing to the event.
@@ -865,6 +910,171 @@ public static class EventsUsage
     // In C# event listener: Event click from ID btn1    
     // Unsubscribed btn1.
 }
+```
+
+### Interop with the Event Object
+
+If the Event object is passed directly as a JSObject, then we can access properties of the event using JSObject's.GetPropertyAs\* methods.  For example, we might use `eventObj.GetPropertyAsJSObject("target")` to retrieve `event.target` as a JSObject reference to the HTMLElement, then pass this to other interop methods that might change the state of the element or retrieve data from other HTML elements such as a parent form.
+
+Alternative approaches of interacting with the event object:
+- Passing the event object and marshelling as a JSObject, then calling the JSObject's GetPropertyAs\*().
+- Calling a JSImport'd method and passing the eventObj as a parameter, and allowing the JS shim to access or operate on the parameters.
+- Wrapping our `listenerFunc` in the JS shim implementation to either fully or partially serialize the eventObj to a JSON string before passing it the C# event handler where it can be deserialized.  This may have undesirable side effects since serializing a property such as event.currentTarget will lose its reference as an HTMLElement.  
+- Wrapping our `listenerFunc` in the JS shim implementation, extracting additional values from the eventObj or DOM, and passing them as primtive parameters to our event listener.  Requires our event listener be declared with additional parameters.  See [Decomposing Event Parameters in the JS Shim](#Decomposing-Event-Parameters-in-the-JS-Shim)
+
+SerratedJQ uses an advanced approach, where it partially serializes the event object, and uses a visitor pattern to insert replacement placeholders and preserve references to HTMLElement/jQueryObject references in an array.  An intermediate listener deserializes the JSON, and restores the JSObject references.  This hybrid approach allows most primitive values of the event to be accessed naturally without interop, while specific references such as target/currentTarget properties can be acted on as a JSObject.  This is required where we would want to interact with \*.currentTarget's HTMLElement through interop.
+
+### Instance Methods as Event Listeners
+
+An instance method can be used as an event listener:
+
+```C#
+public class SomeClass
+{
+    // SubscribeEvent click listener instance function
+    public void InstanceClickListener(JSObject eventObj)
+    {
+        Console.WriteLine($"[ClickListener handler] Event fired with event type via interop property '{eventObj.GetPropertyAsString("type")}'");
+        JSObjectExample.Log(eventObj);
+    }
+}
+
+// Usage:
+var instance = new SomeClass();
+EventsProxy.SusbcribeEvent(element, "click", instance.InstanceClickListener); // Using instance method as listener
+```
+
+- Allows the handler to access state of the C# instance, allowing backing state/model data to be managed in C#.  Useful for cases where you may have a list of UI items and the listener needs to act on the backing data specific to the item clicked.
+- Ties the lifetime of the C# instance to the lifetime of the HTMLElement.  As long as the C# instance is subscribed to the event, and the JSObject reference publishing the event has not been garbage collected, then the C# instance will be preserved.
+- Allows the instance to expose a traditional C# event and present strongly typed C# data for the event, hiding the interop details from the downstream event consumer.
+
+For example, this can be valuable when implementing a wrapper in C# that encapsulates an HTMLElement or HTML fragment.  This is demonstrated in the SerratedJQSample project's [ProductSaleRow](https://github.com/SerratedSharp/SerratedJQ/blob/d2406a1b94334f6fc3ceba422e74f25d289004bb/SerratedJQSample/Sample.Wasm/ClientSideModels/ProductSaleRow.cs#L28) which wraps an HTML fragment as a component, proxies JS events, and includes backing model data in the event specific to that row/instance.  This allows downstream consumers of the component to subscribe to a strongly typed event which includes the model data, and hides the complexities of JS interop from the caller.
+
+
+### Wrapping a JS Event as a C# Event
+
+JS events can be exposed as classic C# events.  This presents an event handling implementation more familiar to C# as shown by this usage example:
+
+```C#
+JSObjectWrapperEventHandler<HtmlElementWrapper, JSObject> eventHandler = (HtmlElementWrapper sender, JSObject e) =>
+{
+    Console.WriteLine("Detected element click.");    
+    JSObjectExample.Log(sender.JSObject, e);
+};
+
+htmlElementWrapper.OnClick += eventHandler;
+EventsProxy.Click(element);// trigger event to test handler as if we clicked on element
+
+htmlElementWrapper.OnClick -= eventHandler; // remove event handler
+EventsProxy.Click(element);// trigger event again to verify event no longer fired
+```
+
+To support this implementation we begin with a JS shim for addEventListener and removeEventListener: 
+
+```JS
+globalThis.subscribeEvent = function(elementObj, eventName, listenerFunc) 
+{    
+    let handler = function (e) {
+        listenerFunc(e);
+    }.bind(elementObj);
+    elementObj.addEventListener( eventName, handler, false );
+    return handler; // return boxed JSObject reference for use in removeEventListener
+}
+globalThis.unsubscribeEvent = function(elementObj, eventName, listenerFunc) { 
+    return elementObj.removeEventListener( eventName, listenerFunc, false ); 
+}
+```
+
+```C#
+public partial class EventsProxy
+{
+    [JSImport("globalThis.subscribeEvent")]
+    public static partial JSObject SubscribeEvent(JSObject elementObj, string eventName,
+        [JSMarshalAs<JSType.Function<JSType.Object>>] Action<JSObject> listener);
+
+    [JSImport("globalThis.unsubscribeEvent")]
+    public static partial void UnsubscribeEvent(JSObject jSObject, string eventName, JSObject listener);
+}
+```
+
+Note, the difference in the UnsubscribeEvent's third parameter that takes the JSObject reference returned from the other method, rather than an Action. 
+
+We'll use a wrapper for HtmlElement to demonstrate the implementation of the click event. To minimize the amount of interop occurring for this event, we support multiple C# subscribers through a single JS interop event subscription. 
+
+```C#
+public interface IJSObjectWrapper { JSObject JSObject { get; } }
+public class HtmlElementWrapper(JSObject jsObject) : IJSObjectWrapper
+{
+    public JSObject JSObject { get; } = jsObject;
+     
+    // The signature/type of our event handler
+    public delegate void JSObjectWrapperEventHandler<in TSender, in TEventArgs>(TSender sender, TEventArgs e)
+        where TSender : IJSObjectWrapper;
+    
+    // The delegate that will accumulate methods that have subscribed to the event
+    // This is null when no subscribers are present
+    private JSObjectWrapperEventHandler<HtmlElementWrapper, JSObject> onClick;
+    
+    const string EventName = "click";// The JS event name we are implementing
+    
+    // The JS reference to our private JSInteropEventListener action
+    private JSObject JSListener { get; set; } 
+    
+    public event JSObjectWrapperEventHandler<HtmlElementWrapper, JSObject> OnClick
+    {
+        add
+        {
+            // We have only one JS listener, and can proxy firings to all C# subscribers
+            if (onClick == null) // if first subscriber, then add JS listener
+            { 
+                JSListener = EventsProxy.SubscribeEvent(this.JSObject, EventName, JSInteropEventListener);
+            }
+            // Always add the C# subscriber to our delegate "event collection"
+            onClick += value;
+        }
+        remove
+        {
+            if (onClick == null)// if no subscribers on this instance/event
+            {
+                return;// nothing to remove
+            }
+
+            onClick -= value; // else remove C# susbcriber
+                
+            if (onClick == null) // if last subscriber removed, then remove JS listener
+            {
+                EventsProxy.UnsubscribeEvent(this.JSObject, EventName, JSListener);
+            }
+        }
+    }
+
+    // When the JS event is fired, this listener is called, and fires the C# event
+    public void JSInteropEventListener(JSObject eventObj)
+    {
+        onClick?.Invoke(this, eventObj);// fire event on all subscribers
+    }
+}
+```
+
+SerratedJQ demonstrates a more flexible approach with `JQueryPlainObject.OnClick` and `.On(eventName, ...)` to support a greater range of events without the need for the above boiler plate code to support the event, but relies on JQuery for the internal implementation.
+
+### Triggering JS Events from C#
+
+As demonstrated previously, we can trigger JS events from .NET.  This is useful for testing event handlers, riting UI unit tests, or for ensuring that a programmatically driven action follows the same code path as the event handler.  For example, triggering a click event on a button element:
+
+Declare JS shim:
+```JS
+globalThis.click = function(elementObj) { return elementObj.click(); }    
+```
+
+```C#
+public partial class EventsProxy {
+    [JSImport("globalThis.click")]
+    public static partial string Click(JSObject elementObj);
+}
+
+//Usage:
+EventsProxy.Click(element); // Trigger the click event
 ```
 
 ## Instance Wrappers
