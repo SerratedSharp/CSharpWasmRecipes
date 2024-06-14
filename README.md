@@ -1,4 +1,4 @@
-Access the table of contents via the ![image](https://github.com/SerratedSharp/CSharpWasmRecipes/assets/97156524/49113928-1bd7-4e7c-8c28-b1aafa035744) icon.
+Access the table of contents via the ![image](https://github.com/SerratedSharp/CSharpWasmRecipes/assets/97156524/49113928-1bd7-4e7c-8c28-b1aafa035744) icon in the upper right of this pane.
 
 To improve readability, navigate [here](README.md) then collapse the files drawer:
 
