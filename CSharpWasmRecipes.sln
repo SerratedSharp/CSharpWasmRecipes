@@ -8,8 +8,13 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{8DA56AB4-F856-426B-96FE-AD4BB8FD2ACC}"
 	ProjectSection(SolutionItems) = preProject
 		Architecture.md = Architecture.md
+		Archive.md = Archive.md
 		README.md = README.md
 	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WasmBrowser.Recipes.WasmClient", "WasmBrowser.Recipes.WasmClient\WasmBrowser.Recipes.WasmClient.csproj", "{45BB3583-BE98-487E-A9FF-D96A22E6D976}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Archive", "Archive", "{CF657FE2-2515-4A47-B66A-10D67B4E2E0A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,9 +26,16 @@ Global
 		{BA760781-928A-42DC-8DB4-FE1E5B4C3E4F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BA760781-928A-42DC-8DB4-FE1E5B4C3E4F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BA760781-928A-42DC-8DB4-FE1E5B4C3E4F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{45BB3583-BE98-487E-A9FF-D96A22E6D976}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{45BB3583-BE98-487E-A9FF-D96A22E6D976}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{45BB3583-BE98-487E-A9FF-D96A22E6D976}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{45BB3583-BE98-487E-A9FF-D96A22E6D976}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{BA760781-928A-42DC-8DB4-FE1E5B4C3E4F} = {CF657FE2-2515-4A47-B66A-10D67B4E2E0A}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {B28C4785-832A-46C3-8E11-307565203853}

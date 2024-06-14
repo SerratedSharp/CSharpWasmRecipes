@@ -11,12 +11,20 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="ExamplesJSShim - Working Export with GlobaTHis.js" />
     <None Remove="Sandbox.js" />
   </ItemGroup>
 
   <ItemGroup>
+    <Content Include="ExamplesJSShim - Working Export with GlobaTHis.js">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-    <PackageReference Include="SerratedSharp.SerratedJQ" Version="0.1.4" />
+    <PackageReference Include="SerratedSharp.SerratedJQ" Version="0.1.6" />
     <PackageReference Include="Uno.Foundation.Runtime.WebAssembly" Version="5.0.19" />
 	<PackageReference Include="Uno.UI.WebAssembly" Version="4.10.13" />
     <PackageReference Include="Uno.Wasm.Bootstrap" Version="8.0.3" />

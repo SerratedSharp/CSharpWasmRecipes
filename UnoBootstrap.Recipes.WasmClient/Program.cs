@@ -23,9 +23,15 @@ namespace UnoBootstrap.Recipes.WasmClient
             // NOTE: Because this code is running in the browser, Console.WriteLine() appears in the browser's debug console.
             Console.WriteLine("Hello, World!");
 
-            //SerratedSharp.SerratedJQ.JSDeclarations.LoadScripts();
-            //await SerratedSharp.JSInteropHelpers.HelpersJS.LoadJQuery("https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js");
-            //await JQueryPlain.Ready(); // Wait for document Ready
+            //Not needed for Uno Bootstrap, loaded automatically via Require module inclusion SerratedSharp.SerratedJQ.JSDeclarations.LoadScripts();
+            
+            await SerratedSharp.SerratedJQ.JSDeclarations.LoadJQuery("https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js");
+            //SerratedSharp.SerratedJQ.JSDeclarations.LoadScripts();// declares javascript proxies needed for JSImport
+            await JQueryPlain.Ready(); // Wait for document Ready
+            //JQueryPlain.Select("base").Remove();// Remove Uno's <base> element that can break relative URL's if embedded.js hosted remotely
+
+            JQueryPlainObject unoBody = JQueryPlain.Select("[id='uno-body'");
+            unoBody.Html("<div style='display:none'></div>");// triggers uno observer that hides the loading bar/splash screen
 
             // We can await values returned from JS promises:
             string resolvedValue = await Basic.PromisesWUno.AwaitFunctionReturningPromisedString();
@@ -85,6 +91,7 @@ namespace UnoBootstrap.Recipes.WasmClient
             // JSImport can return object references and primitive values.
             // Call the static JS functions from C#:
             JSObject element = Basic.JSObjectExample.FindElement("uno-body");
+            
             // Pass the handle to another method that calls in instance method on the object:
             var elementClasses = Basic.JSObjectExample.GetClass(element);
             Console.WriteLine("Class string: " + elementClasses);
