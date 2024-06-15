@@ -25,6 +25,7 @@ internal class Program
         await PromisesUsage.Run();
         await EventsUsage.Run();
         await Examples.StronglyTypedWrapper.StronglyTypedWrapperUsage.Run();
+        await Examples.StronglyTypedEvents.StronglyTypedEventsUsage.Run();
 
         // Load JSInteropHelpers dependencies
         await SerratedSharp.SerratedJQ.JSDeclarations.LoadScriptsForWasmBrowser();
