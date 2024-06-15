@@ -50,7 +50,7 @@ It is helpful to be familiar with the ecosystem of different libraries and frame
   
 ### WebAssembly Module Runtimes
 
-To compile a .NET project to a WebAssembly module, one of the following project types can be used.  In addition to compiling your .NET code to the WebAssembly format to be executed by the browser, they both include the JavaScript and .NET runtimes needed to load or "bootstrap" your WebAssembly module.  While the browser provides WASM execution support, some orchestration is needed from JS scripts to download related modules and other assets needed to initialize and load the WASM hosted .NET runtime and your WebAssmebly module.  Both of the following project types produce a package of files upon project Publish which include all of the necessary web assets and JavaScript to handle the runtime initialization process.
+To compile a .NET project to a WebAssembly module, one of the following project types can be used.  In addition to compiling your .NET code to the WebAssembly format to be executed by the browser, they both include the JavaScript and .NET runtimes needed to load or "bootstrap" your WebAssembly module.  While the browser provides WASM execution support, some orchestration is needed from JS scripts to download related modules and other assets needed to initialize and load the WASM hosted .NET runtime and your WebAssembly module.  Both of the following project types produce a package of files upon project Publish which include all of the necessary web assets and JavaScript to handle the runtime initialization process.
 
 - **wasm-experimental/WASM Browser**: The .NET 8 wasm-experimental workload provides the WebAssembly Browser App project template.  We'll refer to this as WASM Browser.  When compiled it produces a WASM package, is structured as a console app with a Main method that is called when loaded in browser, and the project by default will launch a self hosted web server for development/debugging locally.  The resulting package can be published to a folder, and the containing assets deployed to any web server that can serve static files.  Installation instructions: [Run .NET from JavaScript - Prerequisites](https://learn.microsoft.com/en-us/aspnet/core/client-side/dotnet-interop?view=aspnetcore-8.0#prerequisites).
 - **Uno.Bootstrap.Wasm**: Tooling for compiling and packaging a .NET assembly as a WebAssembly/WASM package, along with all the JavaScript necessary for loading(i.e. **bootstrap**ping) the WASM into the browser.  This is only intended for use in the root project which will be the entry point for the WebAssembly.  Other class libraries/projects referenced do not need to reference this package.   (Note, no relation to the Bootstrap CSS/JS frontend framework.)  The name "Bootstrap" refers to similar terminology used for loading operating systems, as it "pulls itself up by its bootstraps".  This project type does not include the Uno UI Platform, but rather produces a simple module for executing .NET code.
@@ -76,11 +76,11 @@ Class libraries which facilitate interop between .NET code and JavaScript.  Typi
 - **SerratedSharp.JSInteropHelpers**: An optional library of helper methods for implementing interop useful for wrapping JS libraries/types. Reduces the amount of boilerplate code needed to call JS. This library is less refined. I created it to support my own JS interop implementations, but it has been key in allowing me to implement large surface areas of JS library APIs quickly.  See [Proxyless Instance Wrapper](#Proxyless-Instance-Wrapper) and additional examples in SerratedJQ implementation: [JQueryPlainObject.cs](https://github.com/SerratedSharp/SerratedJQ/blob/main/SerratedJQLibrary/SerratedJQ/Plain/JQueryPlainObject.cs)
 - **SerratedSharp.SerratedJQ**: An optional .NET wrapper for jQuery to enable expressive access and event handling of the HTML DOM from WebAssembly.  Many of the examples below use native DOM APIs to demonstrate the fundamentals of JS interop.  However, if your goal is DOM access/manipulation/event-handling, then much of the JS shims and C# proxies can be omitted by using [SerratedJQ](https://github.com/SerratedSharp/SerratedJQ) instead.  Additionally, the monadic nature of JQuery lends itself well to minimizing the number of interop object references or interop calls needed by not requiring collections to be materialized across the interop boundary and allowing bulk operations across multiple elements with a single interop call.
 
-The WebAssemblyRuntime package or .NET 7 InteropServices namespace can also be used from class library projects implementing interop which is intended for consumption in a Uno.Bootstrap.Wasm or Wasm Browser project.  Typically a Class Library project template would be used, and would **not** reference Uno.Wasm.Bootstrap.  This template would produce a standard .NET assembly, but you would typically set `[assembly: System.Runtime.Versioning.SupportedOSPlatform("browser")]` in its AssemblyInfo.cs to indicate it is only intended for consumption in applications running as WebAssembly in a browser context.  The class library is not compiled directly to WASM, because the consuming root project is responsible for compiling and packaging all referenced assemblies into the final WASM package.  Class libraries can include Javascript files to act as interop shims.  However, the method for including them varies between whether the class library is consumed in a Uno.Bootstrap.Wasm or WASM Browser project.  For Uno.Bootstrap.Wasm, the JS files must be declared as AMD modules, are placed in a WasmScripts project folder, flagged as Build Action: Embedded Resource, and will be loaded automatically by Uno when.  For WASM Browser, the class library project is declared with `<Project Sdk="Microsoft.NET.Sdk.Razor">`, are placed in a wwwroot folder, flagged as Build Action: Content, and can be loaded at runtime using `JSHost.ImportAsync()`.  Additionally, the JSImport declarations must omit the module name for Uno, and include them for WASM Browser.  A class library can provide shims/proxies with each approach, and then conditionally call each based on whether the calling platform is Uno.Bootstrap.Wasm or not.  (TODO: Provide additional details on how this is accomplished in SerratedJQ.)
+The WebAssemblyRuntime package or .NET 7 InteropServices namespace can also be used from class library projects implementing interop which is intended for consumption in a Uno.Bootstrap.Wasm or Wasm Browser project.  Typically a Class Library project template would be used, and would **not** reference Uno.Wasm.Bootstrap.  This template would produce a standard .NET assembly, but you would typically set `[assembly: System.Runtime.Versioning.SupportedOSPlatform("browser")]` in its AssemblyInfo.cs to indicate it is only intended for consumption in applications running as WebAssembly in a browser context.  The class library is not compiled directly to WASM, because the consuming root project is responsible for compiling and packaging all referenced assemblies into the final WASM package.  Class libraries can include Javascript files to act as interop shims.  However, the method for including them varies between whether the class library is consumed in a Uno.Bootstrap.Wasm or WASM Browser project.  For Uno.Bootstrap.Wasm, the JS files must be declared as AMD modules, are placed in a WasmScripts project folder, flagged as Build Action: Embedded Resource, and will be loaded automatically by Uno when.  For WASM Browser, the class library project is declared with `<Project Sdk="Microsoft.NET.Sdk.Razor">`, are placed in a wwwroot folder, flagged as Build Action: Content, and can be loaded at runtime using `JSHost.ImportAsync()`.  Additionally, the JSImport declarations must omit the module name for Uno, and include them for WASM Browser.  A class library can provide shims/proxies with each approach, and then conditionally call each based on whether the calling platform is Uno.Bootstrap.Wasm or not.
 
 ## Architecture and Debugging
 
-The [Architecture](Architecture.md) overview covers the structure of a new or existing website integrating a WebAssembly package, possible structures of Projects/Solution, and an overview of enabling debugging.  
+The [Architecture](Architecture.md) (TODO: Needs updates for WASM Browser template) overview covers the structure of a new or existing website integrating a WebAssembly package, possible structures of Projects/Solution, and an overview of enabling debugging.  
 
 ### Debugging
 
@@ -924,7 +924,7 @@ Alternative approaches of interacting with the event object:
 - Passing the event object and marshelling as a JSObject, then calling the JSObject's GetPropertyAs\*().
 - Calling a JSImport'd method and passing the eventObj as a parameter, and allowing the JS shim to access or operate on the parameters.
 - Wrapping our `listenerFunc` in the JS shim implementation to either fully or partially serialize the eventObj to a JSON string before passing it the C# event handler where it can be deserialized.  This may have undesirable side effects since serializing a property such as event.currentTarget will lose its reference as an HTMLElement.  
-- Wrapping our `listenerFunc` in the JS shim implementation, extracting additional values from the eventObj or DOM, and passing them as primtive parameters to our event listener.  Requires our event listener be declared with additional parameters.  See [Decomposing Event Parameters in the JS Shim](#Decomposing-Event-Parameters-in-the-JS-Shim)
+- Wrapping our `listenerFunc` in the JS shim implementation, extracting additional values from the eventObj or DOM, and passing them as primtive parameters to our event listener.  Requires our event listener be declared with additional parameters.  This is demonstrated in the JS previous `SubscribeEventById` method where `listenerFunc(event.type, event.target.id  )` passes to primitive values from the event to the C# listener.
 
 SerratedJQ uses an advanced approach, where it partially serializes the event object, and uses a visitor pattern to insert replacement placeholders and preserve references to HTMLElement/jQueryObject references in an array.  An intermediate listener deserializes the JSON, and restores the JSObject references.  This hybrid approach allows most primitive values of the event to be accessed naturally without interop, while specific references such as target/currentTarget properties can be acted on as a JSObject.  This is required where we would want to interact with \*.currentTarget's HTMLElement through interop.
 
@@ -954,10 +954,9 @@ EventsProxy.SusbcribeEvent(element, "click", instance.InstanceClickListener); //
 
 For example, this can be valuable when implementing a wrapper in C# that encapsulates an HTMLElement or HTML fragment.  This is demonstrated in the SerratedJQSample project's [ProductSaleRow](https://github.com/SerratedSharp/SerratedJQ/blob/d2406a1b94334f6fc3ceba422e74f25d289004bb/SerratedJQSample/Sample.Wasm/ClientSideModels/ProductSaleRow.cs#L28) which wraps an HTML fragment as a component, proxies JS events, and includes backing model data in the event specific to that row/instance.  This allows downstream consumers of the component to subscribe to a strongly typed event which includes the model data, and hides the complexities of JS interop from the caller.
 
-
 ### Wrapping a JS Event as a C# Event
 
-JS events can be exposed as classic C# events.  This presents an event handling implementation more familiar to .NET as shown by this usage example:
+JS events can be exposed as classic .NET/C# events.  This presents an event handling implementation more familiar to .NET as shown by this usage example:
 
 ```C#
 Element.JSObjectWrapperEventHandler<Element, JSObject> managedHandler = 
@@ -968,9 +967,9 @@ Element.JSObjectWrapperEventHandler<Element, JSObject> managedHandler =
         PrimitivesProxy.ConsoleLog(e);
     };
 
-element.OnClick += test;// Subscribe to the event
+element.OnClick += managedHandler;// Subscribe to the event
 EventsProxy.TriggerClick("btn3");// Trigger event to test hander
-element.OnClick -= test;// Unsubscribe from the event
+element.OnClick -= managedHandler;// Unsubscribe from the event
 ```
 
 The same JS shim `subscribeEvent` and `unsubscribeEvent` methods and proxies implemented [previously](#Subscribing-to-JS-Events) are leveraged.
@@ -1064,8 +1063,10 @@ public static class StronglyTypedEventsUsage
 }
 ```
 
+See the complete [Strongly Typed Event Example](https://github.com/SerratedSharp/CSharpWasmRecipes/blob/main/WasmBrowser.Recipes.WasmClient/Examples/StronglyTypedEvents.cs)
+
 > [!Note]
-> If you're goal is to subscribe to HTML DOM events, SerratedJQ demonstrates a more flexible approach with `JQueryPlainObject.OnClick` and `.On(eventName, ...)` to support this pattern across a greater range of events without the need for the above boiler plate code, but relies on JQuery for the internal implementation.
+> If your goal is to subscribe specifically to HTML DOM events, SerratedJQ demonstrates a more flexible approach with `JQueryPlainObject.OnClick` and `.On(eventName, ...)` to support this pattern across a greater range of events without the need for the above boiler plate code, but relies on JQuery for the internal implementation.
 
 ### Triggering JS Events from C#
 
