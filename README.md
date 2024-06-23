@@ -561,9 +561,9 @@ public static class JSObjectUsage
     }
 }
 // The example displays the following output in the browser's debug console:
-//     {name: 'Example JS Object', answer: 41, question: null, Symbol(wasm cs_owned_js_handle): 5, summarize: マ
-//     {name: 'Example JS Object', answer: 42, question: null, Symbol(wasm cs_owned_js_handle): 5, summarize: マ
-//     {name: 'Example JS Object', answer: 42, question: 'What is the answer?', Symbol(wasm cs_owned_js_handle): 5, summarize: マ
+//     {name: 'Example JS Object', answer: 41, question: null, Symbol(wasm cs_owned_js_handle): 5, summarize: ﾂマ
+//     {name: 'Example JS Object', answer: 42, question: null, Symbol(wasm cs_owned_js_handle): 5, summarize: ﾂマ
+//     {name: 'Example JS Object', answer: 42, question: 'What is the answer?', Symbol(wasm cs_owned_js_handle): 5, summarize: ﾂマ
 //     Summary: The question is "What is the answer?" and the answer is 42.
 ```
 
@@ -1501,7 +1501,7 @@ public static class JSObjectBenchmark
 
 # Troubleshooting
 
-As of .NET 8, JavaScript interop is implemented with "good enough" error handling.  Appropriate errors are generated, but messages may not necessarily be intuitive nor informative.  Errors will typically apepar in the browser console, and could potentially also bubble as an exception in .NET code.  This can vary depending on the executing WebAssembly platform.
+As of .NET 8, JavaScript interop is implemented with "good enough" error handling.  Appropriate errors are generated, but messages may not necessarily be intuitive nor informative.  Errors will typically appear in the browser console, and could potentially also bubble as an exception in .NET code.  This can vary depending on the executing WebAssembly platform.
 
 All of the WebAssembly project types mentioned support integrated debugging in VisualStudio in one form or another.  Setting a breakpoint in the .NET code for the WebAssembly, launching in debug mode, and loading or refreshing the page should trigger execution of the WebAssembly's entry point and pausing on the breakpoint when reached.  Note some project settings can prevent debugging.
 
