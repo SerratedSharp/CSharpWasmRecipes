@@ -1439,6 +1439,9 @@ We can use `Lazy<>` to retieve a handle to a global JS object such as `console` 
 To implement access to instance methods on the object, we can use the `CallJSOfSameName` extension method from `SerratedSharp.JSInteropHelpers`.  This method will call the instance method on the JS object with the same name as the C# method, and will pass the parameters to the JS method.  The generic parameter indicates the expected return type of the JS method.  For void return types `object` can be used and the return discarded.
 
 ```C#
+using System.Runtime.InteropServices.JavaScript;
+using SerratedSharp.JSInteropHelpers;
+
 public static class JSConsole
 {
     static Lazy<JSObject> _console = new(() => JSHost.GlobalThis.GetPropertyAsJSObject("console"));
