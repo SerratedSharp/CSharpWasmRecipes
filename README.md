@@ -1427,6 +1427,31 @@ internal partial class ProxylessDomShimModule
 > [!Important]
 > Some edge cases require careful handling of parameters to achieve desired results.  While I have thoroughly tested SerrateJQ which internally leverages `SerratedSharp.JSInteropHelpers`, there are some rough spots in JSInteropHelpers that could be pitfalls for developers, as I have not refinemed the API for broader usage.  The implementation of [JQueryPlainObject](https://github.com/SerratedSharp/SerratedJQ/blob/main/SerratedJQLibrary/SerratedJQ/Plain/JQueryPlainObject.cs) thoroughly exercises JSInteropHelpers and demonstates handling of some edge cases.  I'd be happy for feedback if others are interested in using this library.
 
+## Proxyless Instance Methods on Global Objects
+
+We can use `Lazy<>` to retieve a handle to a global JS object such as `console` and access its instance methods without needing to implement a shim nor proxy.  This ensures:
+
+- We don't generate an unnecesary interop call if the object is never accessed.
+- We don't need to implement a JS shim nor explicitly map JSImport's on a proxy.
+- We don't access the global object until the first time it is accessed, which can be important if the object is not yet defined when the application starts.
+- Subsequent accesses use the existing handle without re-evaluating the Lazy accessor.
+
+To implement access to instance methods on the object, we can use the `CallJSOfSameName` extension method from `SerratedSharp.JSInteropHelpers`.  This method will call the instance method on the JS object with the same name as the C# method, and will pass the parameters to the JS method.  The generic parameter indicates the expected return type of the JS method.  For void return types `object` can be used and the return discarded.
+
+```C#
+public static class JSConsole
+{
+    static Lazy<JSObject> _console = new(() => JSHost.GlobalThis.GetPropertyAsJSObject("console"));
+
+    public static void Log(params object[] parameters)
+    {   
+        _console.Value.CallJSOfSameName<object>(parameters);
+    }
+}
+```
+
+If you wish for the C# method's name to differ, then optional parameters of CallJSOfSameNAme allows you to explicitely specify the JS method name.
+
 # Performance Considerations for Interop
 
 Marshalling of calls and the overhead of tracking objects across the interop boundary is more expensive than native .NET operations, but for moderate usage should still demonstrate acceptable performance for a typical web application.
