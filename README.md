@@ -1431,7 +1431,7 @@ internal partial class ProxylessDomShimModule
 
 We can use `Lazy<>` to retieve a handle to a global JS object such as `console` and access its instance methods without needing to implement a shim nor proxy.  This ensures:
 
-- We don't generate an unnecesary interop call if the object is never accessed.
+- We don't generate an unnecessary interop call if the object is never accessed.
 - We don't need to implement a JS shim nor explicitly map JSImport's on a proxy.
 - We don't access the global object until the first time it is accessed, which can be important if the object is not yet defined when the application starts.
 - Subsequent accesses use the existing handle without re-evaluating the Lazy accessor.
