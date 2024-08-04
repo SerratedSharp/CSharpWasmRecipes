@@ -4,21 +4,19 @@ using System.Threading.Tasks;
 
 namespace WasmBrowser.Recipes.WasmClient.Examples;
 
-// See wwwroot/JSObjectShim.js for implementation details.
-public partial class JSObjectProxy
+public partial class JSObjectInterop
 {
-    [JSImport("JSObjectShim.CreateObject", "JSObjectShim")]
+    [JSImport("createObject", "JSObjectShim")]
     public static partial JSObject CreateObject();
 
-    [JSImport("JSObjectShim.IncrementAnswer", "JSObjectShim")]
+    [JSImport("incrementAnswer", "JSObjectShim")]
     public static partial void IncrementAnswer(JSObject jsObject);
 
-    [JSImport("JSObjectShim.Summarize", "JSObjectShim")]
+    [JSImport("summarize", "JSObjectShim")]
     public static partial string Summarize(JSObject jsObject);
 
     [JSImport("globalThis.console.log")]
     public static partial void ConsoleLog([JSMarshalAs<JSType.Any>] object value);
-
 }
 
 public static class JSObjectUsage
@@ -27,25 +25,21 @@ public static class JSObjectUsage
     {
         await JSHost.ImportAsync("JSObjectShim", "/JSObjectShim.js");
 
-        JSObject jsObject = JSObjectProxy.CreateObject();
-        JSObjectProxy.ConsoleLog(jsObject);
-        JSObjectProxy.IncrementAnswer(jsObject);
-        // Note: We did not retrieve an updated object, and will see the change reflected in our existing instance.
-        JSObjectProxy.ConsoleLog(jsObject);
+        JSObject jsObject = JSObjectInterop.CreateObject();
+        JSObjectInterop.ConsoleLog(jsObject);
+        JSObjectInterop.IncrementAnswer(jsObject);
+        // An updated object isn't retrieved. The change is reflected in the 
+        // existing instance.
+        JSObjectInterop.ConsoleLog(jsObject);
 
-        // JSObject exposes several methods for interacting with properties:
+        // JSObject exposes several methods for interacting with properties.
         jsObject.SetProperty("question", "What is the answer?");
-        JSObjectProxy.ConsoleLog(jsObject);
+        JSObjectInterop.ConsoleLog(jsObject);
 
-        // We can't directly JSImport an instance method on the jsObject, but we can
-        // pass the object reference and have the JS shim call the instance method.
-        string summary = JSObjectProxy.Summarize(jsObject);
+        // We can't directly JSImport an instance method on the jsObject, but we 
+        // can pass the object reference and have the JS shim call the instance 
+        // method.
+        string summary = JSObjectInterop.Summarize(jsObject);
         Console.WriteLine("Summary: " + summary);
-
     }
 }
-// The example displays the following output in the browser's debug console:
-//     {name: 'Example JS Object', answer: 41, question: null, Symbol(wasm cs_owned_js_handle): 5, summarize: ƒ}
-//     {name: 'Example JS Object', answer: 42, question: null, Symbol(wasm cs_owned_js_handle): 5, summarize: ƒ}
-//     {name: 'Example JS Object', answer: 42, question: 'What is the answer?', Symbol(wasm cs_owned_js_handle): 5, summarize: ƒ}
-//     Summary: The question is "What is the answer?" and the answer is 42.

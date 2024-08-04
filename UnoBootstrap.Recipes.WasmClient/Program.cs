@@ -118,28 +118,28 @@ namespace UnoBootstrap.Recipes.WasmClient
             //htmlElementWrapper.OnClick += test;
             Console.WriteLine("+= test");
             htmlElementWrapper.OnClick += test;
-            EventsProxy.Click(element);// trigger event to test hander
+            EventsInterop.Click(element);// trigger event to test hander
             Console.WriteLine("-= test");
             htmlElementWrapper.OnClick -= test;
-            EventsProxy.Click(element);// trigger event again to verify event no longer fired
+            EventsInterop.Click(element);// trigger event again to verify event no longer fired
             Console.WriteLine("+= test");
             htmlElementWrapper.OnClick += test;
-            EventsProxy.Click(element);
+            EventsInterop.Click(element);
 
 
 
-            //EventsProxy.SubscribeEvent(blahBtn, "click", Test);
-            //EventsProxy.UnsubscribeEvent(blahBtn, "click", Test);
-            //EventsProxy.SubscribeEvent(blahBtn, "click", Test);
-            //EventsProxy.UnsubscribeEvent(blahBtn, "click", Test);
-            //EventsProxy.SubscribeEvent(blahBtn, "click", Test);
-            //EventsProxy.UnsubscribeEvent(blahBtn, "click", Test);
+            //EventsInterop.SubscribeEvent(blahBtn, "click", Test);
+            //EventsInterop.UnsubscribeEvent(blahBtn, "click", Test);
+            //EventsInterop.SubscribeEvent(blahBtn, "click", Test);
+            //EventsInterop.UnsubscribeEvent(blahBtn, "click", Test);
+            //EventsInterop.SubscribeEvent(blahBtn, "click", Test);
+            //EventsInterop.UnsubscribeEvent(blahBtn, "click", Test);
 
-            //EventsProxy.SubscribeEvent(element, "click", htmlElementWrapper.JSInteropEventListener);
-            //EventsProxy.UnsubscribeEvent(element, "click", htmlElementWrapper.JSInteropEventListener);
-            //EventsProxy.SubscribeEvent(element, "click", htmlElementWrapper.JSInteropEventListener);
+            //EventsInterop.SubscribeEvent(element, "click", htmlElementWrapper.JSInteropEventListener);
+            //EventsInterop.UnsubscribeEvent(element, "click", htmlElementWrapper.JSInteropEventListener);
+            //EventsInterop.SubscribeEvent(element, "click", htmlElementWrapper.JSInteropEventListener);
 
-            //EventsProxy.Click(element); // Trigger the click event to test event listeners
+            //EventsInterop.Click(element); // Trigger the click event to test event listeners
 
             // Using WebAssemblyRuntime based instance wrapper 
             Advanced.ElementWrapper elementWrapper = Advanced.ElementWrapper.GetElementById("uno-body");
@@ -200,7 +200,7 @@ namespace UnoBootstrap.Recipes.WasmClient
         {
 
             // Using a lambda expression as a listener
-            EventsProxy.SubscribeEvent(element, "click", (JSObject eventObj) =>
+            EventsInterop.SubscribeEvent(element, "click", (JSObject eventObj) =>
             {
                 Console.WriteLine($"[Inline handler] Event fired with event type via interop property '{eventObj.GetPropertyAsString("type")}'");
                 JSObjectExample.Log(eventObj);
@@ -212,12 +212,12 @@ namespace UnoBootstrap.Recipes.WasmClient
                 Console.WriteLine($"[Local variable handler] Event fired with event type via interop property '{eventObj.GetPropertyAsString("type")}'");
                 JSObjectExample.Log(eventObj);
             };
-            EventsProxy.SubscribeEvent(element, "click", listener);
+            EventsInterop.SubscribeEvent(element, "click", listener);
 
-            EventsProxy.SubscribeEvent(element, "click", ClickListener); // Using static function as listener
+            EventsInterop.SubscribeEvent(element, "click", ClickListener); // Using static function as listener
 
             var instance = new SomeClass();
-            EventsProxy.SubscribeEvent(element, "click", instance.InstanceClickListener); // Using instance method as listener
+            EventsInterop.SubscribeEvent(element, "click", instance.InstanceClickListener); // Using instance method as listener
 
             // use local action variable as listener for subscribeEventWithParameters
             Action<JSObject, string, JSObject> listenerWithParameters = (JSObject eventObj, string eventType, JSObject current) =>
@@ -225,7 +225,7 @@ namespace UnoBootstrap.Recipes.WasmClient
                 Console.WriteLine($"[Event Destructured Parameters] eventType:{eventType}");
                 JSObjectExample.Log(eventObj, eventType, current);// will show that `current` is a HTMLElement reference
             };
-            EventsProxy.SusbcribeEventWithParameters(element, "click", listenerWithParameters);
+            EventsInterop.SusbcribeEventWithParameters(element, "click", listenerWithParameters);
         }
 
         //private static void HtmlElementWrapper_OnClick(HtmlElementWrapper sender, JSObject e)
@@ -277,7 +277,7 @@ namespace UnoBootstrap.Recipes.WasmClient
                 // We have only one JS listener, and can proxy firings to all C# subscribers
                 if (onClick == null) // if first subscriber, then add JS listener
                 { 
-                    JSListener = EventsProxy.SubscribeEvent(this.JSObject, EventName, JSInteropEventListener);
+                    JSListener = EventsInterop.SubscribeEvent(this.JSObject, EventName, JSInteropEventListener);
                 }
                 // Always add the C# subscriber to our event collection
                 onClick += value;
@@ -293,7 +293,7 @@ namespace UnoBootstrap.Recipes.WasmClient
                 
                 if (onClick == null) // if last subscriber removed, then remove JS listener
                 {
-                    EventsProxy.UnsubscribeEvent(this.JSObject, EventName, JSListener);
+                    EventsInterop.UnsubscribeEvent(this.JSObject, EventName, JSListener);
                 }
             }
         }

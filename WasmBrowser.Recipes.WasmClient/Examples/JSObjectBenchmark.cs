@@ -9,48 +9,48 @@ public static class JSObjectBenchmark
 {
     public static async Task Run()
     {
-        await JSHost.ImportAsync("JSObjectShim", "/JSObjectShim.js");
+        //await JSHost.ImportAsync("JSObjectShim", "/JSObjectShim.js");
 
-        Stopwatch sw = new Stopwatch();
+        //Stopwatch sw = new Stopwatch();
 
-        var jsObject = JSObjectProxy.CreateObject();
-        sw.Start();
-        for (int i = 0; i < 1000000; i++)
-        {
-            JSObjectProxy.IncrementAnswer(jsObject);
-        }
-        sw.Stop();
-        Console.WriteLine($"JS interop elapsed time: {sw.Elapsed.TotalSeconds:#.0000} seconds at {sw.Elapsed.TotalMilliseconds / 1000000d:#.000000} ms per operation");
+        //var jsObject = JSObjectProxy.CreateObject();
+        //sw.Start();
+        //for (int i = 0; i < 1000000; i++)
+        //{
+        //    JSObjectProxy.IncrementAnswer(jsObject);
+        //}
+        //sw.Stop();
+        //Console.WriteLine($"JS interop elapsed time: {sw.Elapsed.TotalSeconds:#.0000} seconds at {sw.Elapsed.TotalMilliseconds / 1000000d:#.000000} ms per operation");
 
-        var pocoObject = new PocoObject { Question = "What is the answer?", Answer = 41 };
-        sw.Restart();
-        for (int i = 0; i < 1000000; i++)
-        {
-            pocoObject.IncrementAnswer();
-        }
-        sw.Stop();
-        Console.WriteLine($".NET elapsed time: {sw.Elapsed.TotalSeconds:#.0000} seconds at {sw.Elapsed.TotalMilliseconds / 1000000d:#.000000} ms per operation");
+        //var pocoObject = new PocoObject { Question = "What is the answer?", Answer = 41 };
+        //sw.Restart();
+        //for (int i = 0; i < 1000000; i++)
+        //{
+        //    pocoObject.IncrementAnswer();
+        //}
+        //sw.Stop();
+        //Console.WriteLine($".NET elapsed time: {sw.Elapsed.TotalSeconds:#.0000} seconds at {sw.Elapsed.TotalMilliseconds / 1000000d:#.000000} ms per operation");
 
 
-        Console.WriteLine($"Begin Object Creation");
+        //Console.WriteLine($"Begin Object Creation");
 
-        sw.Restart();
-        for (int i = 0; i < 1000000; i++)
-        {
-            var jsObject2 = JSObjectProxy.CreateObject();
-            JSObjectProxy.IncrementAnswer(jsObject2);
-        }
-        sw.Stop();
-        Console.WriteLine($"JS interop elapsed time: {sw.Elapsed.TotalSeconds:#.0000} seconds at {sw.Elapsed.TotalMilliseconds / 1000000d:#.000000} ms per operation");
+        //sw.Restart();
+        //for (int i = 0; i < 1000000; i++)
+        //{
+        //    var jsObject2 = JSObjectProxy.CreateObject();
+        //    JSObjectProxy.IncrementAnswer(jsObject2);
+        //}
+        //sw.Stop();
+        //Console.WriteLine($"JS interop elapsed time: {sw.Elapsed.TotalSeconds:#.0000} seconds at {sw.Elapsed.TotalMilliseconds / 1000000d:#.000000} ms per operation");
 
-        sw.Restart();
-        for (int i = 0; i < 1000000; i++)
-        {
-            var pocoObject2 = new PocoObject { Question = "What is the answer?", Answer = 0 };
-            pocoObject2.IncrementAnswer();
-        }
-        sw.Stop();
-        Console.WriteLine($".NET elapsed time: {sw.Elapsed.TotalSeconds:#.0000} seconds at {sw.Elapsed.TotalMilliseconds / 1000000d:#.000000} ms per operation");
+        //sw.Restart();
+        //for (int i = 0; i < 1000000; i++)
+        //{
+        //    var pocoObject2 = new PocoObject { Question = "What is the answer?", Answer = 0 };
+        //    pocoObject2.IncrementAnswer();
+        //}
+        //sw.Stop();
+        //Console.WriteLine($".NET elapsed time: {sw.Elapsed.TotalSeconds:#.0000} seconds at {sw.Elapsed.TotalMilliseconds / 1000000d:#.000000} ms per operation");
     }
     
     public class PocoObject // Plain old CLR object

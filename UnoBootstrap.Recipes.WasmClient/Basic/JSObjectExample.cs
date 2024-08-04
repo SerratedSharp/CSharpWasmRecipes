@@ -36,7 +36,7 @@ namespace UnoBootstrap.Recipes.WasmClient.Basic
 
     }
 
-    public partial class EventsProxy
+    public partial class EventsInterop
     {
 
         [JSImport("globalThis.subscribeEvent")]
