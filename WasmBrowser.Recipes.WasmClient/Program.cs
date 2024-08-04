@@ -32,7 +32,7 @@ internal class Program
         
         await Examples.ProxylessWrapper.ProxylessWrapperUsage.Run();
         
-        await JSObjectBenchmark.Run();
+        JSObjectBenchmark.Run();
         
     }
 
