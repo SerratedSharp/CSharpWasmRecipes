@@ -201,7 +201,7 @@ Most of the marshalled types work in both directions, as parameters and as retur
 
 The following table details supported type mappings:
 
-[.NET 8 JS Interop Type Mapping](https://github.com/dotnet/AspNetCore.Docs/blob/main/aspnetcore/blazor/includes/js-interop/8.0/import-export-interop-mappings.md)
+[.NET 8 JS Interop Type Mapping](https://github.com/dotnet/AspNetCore.Docs/blob/main/aspnetcore/client-side/dotnet-interop/index.md#type-mappings)
 
 Note, some combinations of type mappings that require nested generic types in `JSMarshalAs` are not currently supported.  For example, attempting to materialize an array from a JS promise such as `[return: JSMarshalAs<JSType.Promise<JSType.Array<JSType.Number>>>()]` will generate a compile time error.  An appropriate workaround will vary depending on the scenario, but this specific scenario explored in the [Type Mapping Limitations](#type-mapping-limitations)] section.
 
